@@ -1,0 +1,22 @@
+{
+  "name": "one-of-one",
+  "private": true,
+  "engines": { "node": ">=24" },
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "test": "npm test --workspaces --if-present",
+    "test:e2e": "playwright test",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "fixtures": "node e2e/fixtures/make-fixtures.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
+    "@types/pngjs": "^6.0.5",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
+    "typescript": "~5.9.3"
+  }
+}

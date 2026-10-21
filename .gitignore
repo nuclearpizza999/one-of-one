@@ -22,3 +22,7 @@ npm-debug.log*
 # editors
 .vscode/
 .idea/
+
+# playwright
+test-results/
+playwright-report/
