@@ -8,16 +8,28 @@ A photo becomes a numbered Polaroid-style card: place, date and coordinates read
 
 Read `SPEC.md` before any design or architecture decision. It is the source of truth; this file carries only the rules that must hold in every session and what the spec does not say about the files in this repo.
 
-## State of the repo (Oct 21, 2026)
+## Commands
 
-This is a handoff, not an app yet: the spec, one prototype page and fourteen mockups. There is no `package.json`, so there is nothing to install, build, lint or test. Work the build order in SPEC.md one step at a time, starting at step 1 (the card renderer as a package), and commit after each step. Web first was decided on Oct 21, 2026; the design for this step is in `docs/superpowers/specs/2026-10-21-step-1-scaffold-design.md`. Once the project is scaffolded, replace this section with the install, dev, test and single-test commands.
-
-What runs today (both need network for Google Fonts; the prototype also loads exifr from jsDelivr):
+npm workspaces on Node 24. Install once with `npm install` and `npx playwright install chromium`.
 
 ```
-open prototype/one-of-one.html      # working Make screen: EXIF read, local numbering, PNG export
-open screens/1-make-light.html      # mockups link to each other; every screen has a -light and -dark twin
+npm run dev                              Next dev server at http://localhost:3000 (apps/web)
+npm test                                 Vitest unit tests in every workspace
+npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
+npm run test:e2e                         Playwright; starts the dev server itself
+npx playwright test -g "landscape"       one e2e case by title
+npm run lint                             ESLint (Next config) in apps/web
+npm run typecheck                        tsc for e2e, packages/card and apps/web
+npm run fixtures                         regenerate apps/web/public/dev/*.png
 ```
+
+`e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring.
+
+## Where things are
+
+- `packages/card` is the renderer, with no app imports. `layout.ts` is the single source of card geometry; `Card.tsx` paints it in DOM and `renderPng.ts` paints it on canvas. Fonts ship in `fonts/` and are declared in `src/card.css`.
+- `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
+- Build order from SPEC.md: step 1 (renderer and shell) is done. Next is step 2 (variation), then step 3 (EXIF and place resolution on the Make screen). Decisions and plans so far are under `docs/superpowers/`.
 
 ## Reference material
 

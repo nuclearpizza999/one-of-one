@@ -1,21 +1,26 @@
-# One of One — handoff to Claude Code
+# One of One
 
-Everything designed so far, arranged so Claude Code can build from it.
+A photo becomes a numbered Polaroid-style card. See `SPEC.md` for the product and `CLAUDE.md` for the rules and commands.
 
 ```
-CLAUDE.md                 rules Claude Code loads every session
+CLAUDE.md                 rules and commands Claude Code loads every session
 SPEC.md                   the full build spec (source of truth)
-prototype/one-of-one.html working Make screen: EXIF → card → print PNG
+docs/superpowers/         design specs and implementation plans, one per build step
+packages/card/            the card renderer: layout, DOM painter, PNG painter, fonts, intros
+apps/web/                 the Next.js app: Board, Make, chrome
+e2e/                      Playwright tests, including the screen-versus-print diff
+prototype/one-of-one.html the original working Make screen, kept for reference
 screens/                  fourteen HTML mockups, light and dark; open in a browser
-screens/assets/           the photos the mockups use
 ```
 
-## Start
+## Run it
 
-1. Make this folder a git repo and open it in VS Code.
-2. Open Claude Code (Spark icon in the editor toolbar, or `Cmd+Shift+P` → "Claude Code").
-3. First prompt:
-
-> Read CLAUDE.md, SPEC.md and prototype/one-of-one.html. Then scaffold the project for build step 1 in SPEC.md (the card renderer as a package) and show me the plan before writing files.
+```
+npm install
+npx playwright install chromium
+npm run dev            # http://localhost:3000
+npm test               # unit tests
+npm run test:e2e       # browser tests
+```
 
 Work the build order in SPEC.md one step at a time. Commit after each.
