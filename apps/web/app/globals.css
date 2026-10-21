@@ -1,0 +1,168 @@
+/* Chrome tokens from SPEC.md. The card never uses these. */
+:root {
+  --ground: #ffffff;
+  --ink: #000000;
+  --muted: #6b6b6b;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #000000;
+    --ink: #ffffff;
+    --muted: #8d8d8d;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+}
+body {
+  font-family: var(--font-archivo), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Frame: one phone-width column. */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 430px;
+  margin: 0 auto;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.app-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar: 48px, wordmark left, one 44px target right. */
+.topbar {
+  height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--ink);
+}
+.wordmark {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.topbar-count {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding-right: 4px;
+}
+.icon-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+/* Tab bar: 84px, three 48 × 44 slots, the middle one empty. */
+.tabbar {
+  margin-top: auto;
+  height: 84px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--ink);
+  background: var(--ground);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 44px;
+  color: var(--muted);
+}
+.tab[aria-current="page"] {
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+/* Strips: equal cells inside a rule; the selected cell inverts. */
+.strip {
+  display: flex;
+  border: 1px solid var(--ink);
+}
+.strip-cell {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.strip-cell + .strip-cell {
+  border-left: 1px solid var(--ink);
+}
+.strip-cell[data-selected="true"] {
+  background: var(--ink);
+  color: var(--ground);
+}
+.strip[data-size="option"] .strip-cell {
+  height: 44px;
+}
+
+/* Screen regions. */
+.card-area {
+  display: flex;
+  justify-content: center;
+  padding: 36px 20px 28px;
+}
+.card-area > * {
+  width: 100%;
+  max-width: 310px;
+}
+.status {
+  margin: 0 20px 18px;
+  min-height: 1.4em;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.actions {
+  padding: 0 20px;
+}
+.empty-board {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
