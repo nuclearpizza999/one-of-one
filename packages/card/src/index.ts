@@ -6,3 +6,5 @@ export { INTROS, assignIntro, seedFromPhoto } from "./intros";
 export type { Intro, IntroId } from "./intros";
 export { Card } from "./Card";
 export type { CardPhoto, CardProps } from "./Card";
+export { PRINT_CAP, drawCard, ellipsize, printDimensions, renderPng } from "./renderPng";
+export type { CanvasTarget, Ctx2D, DrawSpec, PrintDims, RenderPngInput, RenderPngResult } from "./renderPng";
