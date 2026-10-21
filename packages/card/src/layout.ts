@@ -16,9 +16,9 @@ export const CARD = {
   /**
    * Distance from the bottom of a line box to its baseline, as a fraction
    * of font size, for EB Garamond at line-height 1.32. Measured once by the
-   * equivalence test (e2e/equivalence.spec.ts) and frozen here.
+   * equivalence test (e2e/equivalence.spec.ts) on 2026-10-21 (DOM probe: 0.3199) and frozen here.
    */
-  baselineFromBottom: 0.3,
+  baselineFromBottom: 0.32,
 } as const;
 
 export interface CardSpec {
