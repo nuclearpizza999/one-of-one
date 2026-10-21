@@ -106,6 +106,7 @@ button:disabled {
   justify-content: center;
   width: 48px;
   height: 44px;
+  box-sizing: border-box;
   color: var(--muted);
 }
 .tab[aria-current="page"] {

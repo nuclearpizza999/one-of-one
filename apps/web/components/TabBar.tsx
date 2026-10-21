@@ -11,7 +11,7 @@ export function TabBar() {
       href={href}
       aria-label={label}
       className="tab"
-      aria-current={path.startsWith(href) ? "page" : undefined}
+      aria-current={path === href || path.startsWith(`${href}/`) ? "page" : undefined}
     >
       <Icon name={icon} />
     </Link>
