@@ -136,7 +136,7 @@ Seven tables carry the product. Counts and guide listings are derived from cards
 | storyboard\_cards | storyboard\_id, card\_id, position | A card can sit in several storyboards. |
 | guide\_picks | id, card\_id, city\_place\_id, curator\_id, position, picked\_at | A curator's pick for a city's guide. No pick, no listing; unpicked cards carry no status. Phase two. |
 
-Storage: original photo in object storage (private), plus a public rendition at 2048 px long edge for boards and maps, and the card PNG rendered on demand for prints.
+Storage: original photo in object storage (private), plus a public rendition at 2048 px long edge for board thumbnails, and the card PNG, drawn by the owner's phone at full resolution whenever the card's content changes (made, numbered, precision changed, print ordered) and stored. Prints and link previews use that stored file; nothing is rendered on the server.
 
 The card number is a single transaction: insert the card as public, increment places.card\_count, write the resulting value to cards.number.
 
@@ -197,7 +197,7 @@ The public side is a human-curated guide per city, not a feed. A curator who kno
 
 Suggested stack: a Next.js (or Expo, if native from day one) front end, Postgres with PostGIS for places and cards, object storage for photos, exifr for EXIF in the browser, a places and geocoding API (Mapbox or Google) for venue and neighborhood lookup. Keep the card renderer as one pure function (card spec in, PNG out) shared by the app and the print pipeline.
 
-1. Card renderer as a package: takes a photo, place string, date string, number and variation; returns the on-screen card and the static print PNG. Port the prototype's canvas export and make it pixel-identical on screen and in print.
+1. Card renderer as a package: takes a photo, place string, date string, number and variation; returns the on-screen card and the static print PNG. Port the prototype's canvas export and make screen and print match: one layout function feeds both painters, and a screenshot diff test with a small tolerance for text anti-aliasing proves it.
 2. Variation system: deterministic derivation from EXIF, place type and number tier; procedural textures seeded by card id; border motion on screen only; a static version of every variation for print.
 3. Make screen with the metadata pipeline: EXIF read, place resolution (landmarks and cities offline; venues and neighborhoods via a places API), editable caption, three intros assigned by seed.
 4. Accounts and the private board: upload, store, the 3-across grid of square crops, open a card.
@@ -230,7 +230,7 @@ What gets replaced:
 
 ## Open decisions
 
-- [ ] Web app first or native first? Native reads RAW previews and full EXIF from the camera roll; web ships faster and already works.
+- [x] Web app first or native first? Decided Oct 21, 2026: web first. Native reads RAW previews and full EXIF from the camera roll, but web ships faster and already works; a native app can reuse the renderer package later.
 - [ ] What "add to board" means for a card the user wants to keep private: today every made card is on the board and the sheet is where it goes public and gets its number, so there is no explicit private save. Decide when it comes up in the build.
 - [ ] Guide tags (phase two): a fixed list (Restaurants, Car spots, Street) or free text with curation? Car spots and Street have no venue to hand off directions to.
 - [ ] Variation: which EXIF and place inputs map to which tiers, and how rare the top tier is. Settle after generating textures for about 50 real photos.
@@ -239,4 +239,4 @@ What gets replaced:
 - [ ] Print vendor: pick after ordering one test print, with a static border texture, from two candidates.
 - [ ] Name conflict check on "One of One" before the app store listing; "1/1" is also common edition jargon in art and NFT circles, so check the mark too.
 
-Decided Oct 21, 2026: the map is gone and Guide takes its tab slot in phase two; the board stays a 3-across grid of square crops, the only cropped view in the product; precision is Area / City on every card, no Exact; the intro is assigned, not picked; no guide tag in v1; each public card gets the next number, even a second card by the same person; a photo that matches nothing gets a blank place line with a hint; the border variation is an option on prints (Plain / Border); directions open the platform's maps app.
+Decided Oct 21, 2026: the map is gone and Guide takes its tab slot in phase two; the board stays a 3-across grid of square crops, the only cropped view in the product; precision is Area / City on every card, no Exact; the intro is assigned, not picked; no guide tag in v1; each public card gets the next number, even a second card by the same person; a photo that matches nothing gets a blank place line with a hint; the border variation is an option on prints (Plain / Border); directions open the platform's maps app; web first, with the card renderer as a standalone package a native app can reuse; the owner's phone draws the card PNG and the server stores it, with no server rendering.

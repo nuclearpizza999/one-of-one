@@ -1,36 +1,62 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # One of One
 
 A photo becomes a numbered Polaroid-style card: place, date and coordinates read from EXIF, a number counting the public cards made at that place. Private board, storyboards shared by link, prints. No feed, no likes, no editing of the card.
 
-Read `SPEC.md` before any design or architecture decision. It is the source of truth; this file only carries the rules that must hold in every session.
+Read `SPEC.md` before any design or architecture decision. It is the source of truth; this file carries only the rules that must hold in every session and what the spec does not say about the files in this repo.
+
+## State of the repo (Oct 21, 2026)
+
+This is a handoff, not an app yet: the spec, one prototype page and fourteen mockups. There is no `package.json`, so there is nothing to install, build, lint or test. Work the build order in SPEC.md one step at a time, starting at step 1 (the card renderer as a package), and commit after each step. Web first was decided on Oct 21, 2026; the design for this step is in `docs/superpowers/specs/2026-10-21-step-1-scaffold-design.md`. Once the project is scaffolded, replace this section with the install, dev, test and single-test commands.
+
+What runs today (both need network for Google Fonts; the prototype also loads exifr from jsDelivr):
+
+```
+open prototype/one-of-one.html      # working Make screen: EXIF read, local numbering, PNG export
+open screens/1-make-light.html      # mockups link to each other; every screen has a -light and -dark twin
+```
 
 ## Reference material
 
-- `SPEC.md`: product, card geometry, variation, metadata pipeline, numbering, screens, data model, privacy, build order, open decisions.
-- `prototype/one-of-one.html`: working Make screen. Port the card CSS, `renderPrint()`, `placeFor()`, `fmtDate()`, `fmtCoords()` and the `INTROS` registry. Do not port its page chrome or its intro picker.
+- `SPEC.md`: product, card geometry, variation, metadata pipeline, numbering, screens, chrome design system, data model, privacy, build order, open decisions, and what was decided on Oct 21, 2026.
+- `prototype/one-of-one.html`: working Make screen. Port the card CSS, `renderPrint()`, `placeFor()`, `fmtDate()`, `fmtCoords()` and the `INTROS` registry with its three CSS classes. Do not port its page chrome, its intro picker, `nextNumber()` (localStorage counting) or the `claude.use("downloads")` save path.
 - `screens/`: fourteen HTML mockups (seven screens, light and dark). Open them in a browser for layout, spacing and icons. They match SPEC.md as of Oct 21, 2026.
+
+### Reading the prototype
+
+- It is 410 lines but 416 KB: line 171 is `const CITIES`, a single 397 KB line. Never cat or Read the whole file. Use `sed -n` ranges or `awk 'length($0) < 400'`, and grep inside `CITIES` if you need it.
+- Where things are: card and intro CSS at lines 35 to 118; `LANDMARKS` and `INTROS` at 173 to 210; `placeFor()` at 220; `fmtDate()` and `fmtCoords()` at 236 to 239; `renderPrint()` at 361 to 387.
+- Screen and print share one geometry. On screen the card is a CSS block inside `.frame { container-type: inline-size }` and every dimension is in `cqw`. In `renderPrint()` the same numbers are px per 1% of width: `W = photoW / 0.90`, `u = W / 100`, mat `5u`, strip `19.2u`, type `3.4u`, inset `3u`, bottom `3.6u`. The last caption line's baseline is `H - 3.6u - fs * 0.28`. The place line is clipped with `text-overflow` on screen and with `fillText`'s `maxWidth = 0.72 * photoW` on canvas. When porting, derive both from one table.
+- The print has no hairline and no shadow. On screen they come from `--edge` and `--shadow`, and the dark theme sets `--edge` to black so the hairline disappears.
+- The prototype's chrome colors (grey wall, warm off-white ink) predate the spec's chrome tokens. Take chrome colors from SPEC.md and the mockups, never from the prototype.
+
+### Reading the mockups
+
+- Each file is a self-contained 390 × 844 phone frame with inline styles; there is no shared stylesheet. Light and dark twins differ only in ground, ink, muted and rule colors.
+- Navigation as linked: Make → Add to board (a sheet over Make) → Board. Make → Print. Storyboard → Shared card, which is what a link opens and has no tab bar, → Guide (phase two). Storyboard's back arrow returns to Board, but the Board mockup has no link into a storyboard; SPEC.md says storyboards are reached from the Board.
+- The mockup cards size the photo in fixed px with `object-fit: cover` so the frames line up. That is a mockup shortcut. The real card never crops; take card geometry from the table in SPEC.md and only the chrome from the mockups.
+- The `aria-label` text on the mockups' icon-only controls is the vocabulary to reuse: Make, Board, Cancel, Back, Replay intro, Add to board, Print, Add cards, Copy share link, Order print, Location shown as, Directions to <venue>.
 
 ## Rules that never bend
 
 - The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them.
-- Card dimensions are percentages of card width (see the table in SPEC.md). Screen and print render from one shared function and must be pixel-equivalent.
+- Card dimensions are percentages of card width (see the table in SPEC.md). One shared layout function feeds the screen painter and the print painter. Pixel-equivalent means a screenshot diff of the two passes within a small tolerance for text anti-aliasing; a one-unit layout drift fails it.
 - The photo is cropped in exactly one place: the square thumbnails on the Board and Storyboard grids. Everywhere else it is shown whole.
 - The card number is assigned server-side in one transaction when a card goes public: one per card, next in sequence for that place, never reissued, never computed on the client.
-- Another user's EXIF coordinates are never served by the API. Public cards expose only the venue's public coordinates or a place centroid, at Area or City precision.
 - Chrome is icons first; words only where an icon would be ambiguous (place and venue names, numbers, size, paper, Plain / Border, Area / City, storyboard titles). Every icon-only control has an aria-label.
 - The tab bar has three slots: Board, empty, Make. The middle slot is reserved for Guide in phase two. There is no map.
 
-## Stack (suggested in SPEC.md; confirm before scaffolding)
+## Stack (web first, decided Oct 21, 2026; the rest as suggested in SPEC.md)
 
 Next.js app, Postgres with PostGIS, object storage for photos, `exifr` for EXIF in the browser, a places and geocoding API for venue and neighborhood lookup.
 
 ## Conventions
 
-- Keep the card renderer as a standalone package with no app imports, so the print pipeline can call it.
+- Keep the card renderer as a standalone package with no app imports, so the Make screen, the PNG export and any future server painter share one code path.
 - Fonts: EB Garamond 600 for the card caption only (400 for the coordinates line); Archivo 500 for app chrome.
 - Light and dark themes change the wall and chrome only; the card is identical in both.
+- Precision is stored as `city` or `neighborhood` (data model) and shown as City or Area (chrome). Keep each vocabulary on its own side.
 - Prefer a short status line in plain words over modal errors when metadata is missing.
-
-## Build and test commands
-
-Add these once the project is scaffolded, then run `/init` to let Claude Code fill in what it discovers.
