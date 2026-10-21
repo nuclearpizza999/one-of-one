@@ -1,6 +1,6 @@
 "use client";
 
-import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
+import type { FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import type { IntroId } from "./intros";
 import type { LineKind } from "./layout";
 
@@ -41,6 +41,12 @@ const HINTS: Record<LineKind, string> = {
   coords: "Coordinates",
 };
 
+/** True when a DOM event started inside an editable caption line, so the mat's pick handlers ignore it. */
+export function startsInCaption(target: EventTarget | null): boolean {
+  const el = target as { closest?: (selector: string) => unknown } | null;
+  return typeof el?.closest === "function" && el.closest("[contenteditable]") != null;
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -71,7 +77,12 @@ export function Card({
   ];
   const lines = allLines.filter((l) => editable || l.text.trim().length > 0);
 
+  const onPickClick = (e: MouseEvent<HTMLElement>) => {
+    if (startsInCaption(e.target)) return;
+    onPick?.();
+  };
   const onPickKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (startsInCaption(e.target)) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onPick?.();
@@ -97,7 +108,7 @@ export function Card({
         role={pickable ? "button" : undefined}
         tabIndex={pickable ? 0 : undefined}
         aria-label={pickable ? "Add a photo" : undefined}
-        onClick={pickable ? onPick : undefined}
+        onClick={pickable ? onPickClick : undefined}
         onKeyDown={pickable ? onPickKey : undefined}
       >
         {border ? <div className="oo-border">{border}</div> : null}

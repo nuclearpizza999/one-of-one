@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { Card } from "../src/Card";
+import { Card, startsInCaption } from "../src/Card";
 
 const caption = {
   place: "Seoul, South Korea",
@@ -80,5 +80,22 @@ describe("Card empty state", () => {
   it("is not a button without onPick", () => {
     const html = renderToStaticMarkup(<Card photo={null} place="" date="" coords="" number={null} />);
     expect(html).not.toContain('role="button"');
+  });
+});
+
+describe("startsInCaption", () => {
+  it("returns true for a target inside a contenteditable element", () => {
+    const target = { closest: (sel: string) => (sel === "[contenteditable]" ? {} : null) };
+    expect(startsInCaption(target as unknown as EventTarget)).toBe(true);
+  });
+
+  it("returns false for a target outside any contenteditable element", () => {
+    const target = { closest: () => null };
+    expect(startsInCaption(target as unknown as EventTarget)).toBe(false);
+  });
+
+  it("returns false for null and for a target without closest", () => {
+    expect(startsInCaption(null)).toBe(false);
+    expect(startsInCaption({} as unknown as EventTarget)).toBe(false);
   });
 });
