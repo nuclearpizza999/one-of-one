@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# dependencies
+node_modules/
+
+# builds
+.next/
+out/
+dist/
+build/
+
+# env and secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editors
+.vscode/
+.idea/
