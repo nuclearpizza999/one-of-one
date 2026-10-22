@@ -8,9 +8,13 @@ export type Fixture = "portrait" | "landscape" | "square";
 export interface DevCardProps {
   fixture: Fixture;
   coords: boolean;
-  number: boolean;
+  /** Card number; null means none. */
+  number: number | null;
+  longPlace: boolean;
   drift: boolean;
 }
+
+const LONG_PLACE = "Somewhere With A Very Long Place Name That Cannot Fit, Country";
 
 const CAPTION = {
   place: "Seoul, South Korea",
@@ -25,11 +29,12 @@ interface Loaded {
   element: HTMLImageElement;
 }
 
-export function DevCard({ fixture, coords, number, drift }: DevCardProps) {
+export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardProps) {
   const src = `/dev/${fixture}.png`;
   // Primitives, so the effects below can list them as dependencies.
   const coordsText = coords ? CAPTION.coords : "";
-  const numberValue = number ? 3 : null;
+  const numberValue = number;
+  const placeText = longPlace ? LONG_PLACE : CAPTION.place;
   const [photo, setPhoto] = useState<Loaded | null>(null);
   const [pngSrc, setPngSrc] = useState<string | null>(null);
   const [pngLoaded, setPngLoaded] = useState(false);
@@ -57,7 +62,7 @@ export function DevCard({ fixture, coords, number, drift }: DevCardProps) {
         image: photo.element,
         naturalWidth: photo.width,
         naturalHeight: photo.height,
-        place: CAPTION.place,
+        place: placeText,
         date: CAPTION.date,
         coords: coordsText,
         number: numberValue,
@@ -84,7 +89,7 @@ export function DevCard({ fixture, coords, number, drift }: DevCardProps) {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [photo, coordsText, numberValue]);
+  }, [photo, coordsText, numberValue, placeText]);
 
   useEffect(() => {
     if (pngLoaded && baseline !== null) document.body.dataset.ready = "1";
@@ -99,7 +104,7 @@ export function DevCard({ fixture, coords, number, drift }: DevCardProps) {
       <div id="dom" className={drift ? "drift" : undefined} style={{ width: 1000 }}>
         <Card
           photo={photo ? { src: photo.src, width: photo.width, height: photo.height } : null}
-          place={CAPTION.place}
+          place={placeText}
           date={CAPTION.date}
           coords={coordsText}
           number={numberValue}

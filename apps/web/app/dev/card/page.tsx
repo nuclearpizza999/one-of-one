@@ -13,11 +13,14 @@ export default async function DevCardPage({ searchParams }: { searchParams: Prom
   if (process.env.NODE_ENV === "production") notFound();
   const q = await searchParams;
   const fixture = FIXTURES.find((f) => f === one(q.fixture)) ?? "portrait";
+  const parsed = Number.parseInt(one(q.number) ?? "", 10);
+  const number = Number.isNaN(parsed) ? 3 : parsed === 0 ? null : parsed;
   return (
     <DevCard
       fixture={fixture}
       coords={one(q.coords) !== "0"}
-      number={one(q.number) !== "0"}
+      number={number}
+      longPlace={one(q.place) === "long"}
       drift={one(q.drift) === "1"}
     />
   );

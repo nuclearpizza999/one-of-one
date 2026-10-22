@@ -17,8 +17,6 @@ const FIXTURES = ["portrait", "landscape", "square"] as const;
 async function capture(page: Page, query: string) {
   await page.goto(`/dev/card?${query}`);
   await page.waitForSelector('body[data-ready="1"]');
-  // The Next dev indicator floats over the card's bottom-left corner; keep it out of the screenshot.
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   // Both images must be decoded before a screenshot, or the capture is blank.
   await page.locator("#dom img.oo-photo").evaluate((el) => (el as HTMLImageElement).decode());
   await page.locator("#png").evaluate((el) => (el as HTMLImageElement).decode());
@@ -50,6 +48,18 @@ for (const fixture of FIXTURES) {
   }
 }
 
+const MULTI_DIGIT_CASES = [
+  ["portrait-number11", "fixture=portrait&coords=1&number=11"],
+  ["portrait-long-place-number1111", "fixture=portrait&coords=1&number=1111&place=long"],
+] as const;
+
+for (const [name, query] of MULTI_DIGIT_CASES) {
+  test(`${name}: the DOM card and the PNG match`, async ({ page }) => {
+    const { dom, png } = await capture(page, query);
+    expect(diffRatio(dom, png, name)).toBeLessThan(MAX_DIFF_RATIO);
+  });
+}
+
 test("a one-unit caption drift is caught", async ({ page }) => {
   const { dom, png } = await capture(page, "fixture=portrait&coords=1&number=1&drift=1");
   expect(diffRatio(dom, png, "drift")).toBeGreaterThan(MAX_DIFF_RATIO * 3);
@@ -60,5 +70,6 @@ test("CARD.baselineFromBottom is the DOM's measured baseline", async ({ page }) 
   await page.waitForSelector('body[data-ready="1"]');
   const measured = Number(await page.locator("#baseline").textContent());
   console.log(`measured baselineFromBottom: ${measured.toFixed(4)} (CARD has ${CARD.baselineFromBottom})`);
+  // 0.006 of a 34 px font is about 0.2 px at the 34 px test size, chosen so a one-pixel baseline error fails.
   expect(Math.abs(measured - CARD.baselineFromBottom)).toBeLessThan(0.006);
 });
