@@ -1,7 +1,7 @@
 "use client";
 
-import { CARD, Card, renderPng } from "@one-of-one/card";
-import { useEffect, useState } from "react";
+import { CARD, Card, type Texture, type Tier, type Variation, borderSvg, cardHeightUnits, paletteFor, renderPng } from "@one-of-one/card";
+import { useEffect, useMemo, useState } from "react";
 
 export type Fixture = "portrait" | "landscape" | "square";
 
@@ -12,6 +12,9 @@ export interface DevCardProps {
   number: number | null;
   longPlace: boolean;
   drift: boolean;
+  texture: Texture | null;
+  tier: Tier;
+  driftBorder: boolean;
 }
 
 const LONG_PLACE = "Somewhere With A Very Long Place Name That Cannot Fit, Country";
@@ -29,8 +32,16 @@ interface Loaded {
   element: HTMLImageElement;
 }
 
-export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardProps) {
+export function DevCard({ fixture, coords, number, longPlace, drift, texture, tier, driftBorder }: DevCardProps) {
   const src = `/dev/${fixture}.png`;
+  // A fixed variation for the diff: warm preset colours, no motion, one seed, so only the texture varies between cases.
+  const variation = useMemo<Variation | null>(
+    () =>
+      texture
+        ? { texture, tone: "warm", palette: paletteFor("warm", null), tier, motion: "none", intro: "rise", seed: 12345 }
+        : null,
+    [texture, tier],
+  );
   // Primitives, so the effects below can list them as dependencies.
   const coordsText = coords ? CAPTION.coords : "";
   const numberValue = number;
@@ -66,6 +77,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardPr
         date: CAPTION.date,
         coords: coordsText,
         number: numberValue,
+        border: variation ? borderSvg(variation, cardHeightUnits(photo.width, photo.height)) : undefined,
       });
       if (cancelled) return;
       url = URL.createObjectURL(r.blob);
@@ -89,7 +101,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardPr
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [photo, coordsText, numberValue, placeText]);
+  }, [photo, coordsText, numberValue, placeText, variation]);
 
   useEffect(() => {
     if (pngLoaded && baseline !== null) document.body.dataset.ready = "1";
@@ -100,8 +112,8 @@ export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardPr
 
   return (
     <div style={{ padding: 20, background: "#888" }}>
-      <style>{`.drift .oo-plate { padding-bottom: ${CARD.bottom + 1}cqw; }`}</style>
-      <div id="dom" className={drift ? "drift" : undefined} style={{ width: 1000 }}>
+      <style>{`.drift .oo-plate { padding-bottom: ${CARD.bottom + 1}cqw; } .drift-border .oo-border-img { transform: translateX(1cqw); }`}</style>
+      <div id="dom" className={[drift ? "drift" : null, driftBorder ? "drift-border" : null].filter(Boolean).join(" ") || undefined} style={{ width: 1000 }}>
         <Card
           photo={photo ? { src: photo.src, width: photo.width, height: photo.height } : null}
           place={placeText}
@@ -109,6 +121,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift }: DevCardPr
           coords={coordsText}
           number={numberValue}
           wall="dark"
+          variation={variation}
         />
       </div>
       {pngSrc ? (

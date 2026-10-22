@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
 import { CARD } from "../packages/card/src/layout";
+import { TEXTURES } from "../packages/card/src/textures";
 
 /**
  * Largest share of differing pixels allowed between the DOM card and the PNG.
@@ -12,6 +13,11 @@ import { CARD } from "../packages/card/src/layout";
  */
 const MAX_DIFF_RATIO = 0.001;
 
+// Textured cards: the two painters rasterise the SVG grain with slightly more difference than
+// text anti-aliasing alone (largest observed 0.00081 on macOS Chromium), so they get their own
+// tolerance by the same rule. A one-unit border drift on the foil texture must exceed three times it.
+const MAX_TEXTURE_DIFF_RATIO = 0.002;
+
 const FIXTURES = ["portrait", "landscape", "square"] as const;
 
 async function capture(page: Page, query: string) {
@@ -19,6 +25,8 @@ async function capture(page: Page, query: string) {
   await page.waitForSelector('body[data-ready="1"]');
   // Both images must be decoded before a screenshot, or the capture is blank.
   await page.locator("#dom img.oo-photo").evaluate((el) => (el as HTMLImageElement).decode());
+  const border = page.locator("#dom img.oo-border-img");
+  if ((await border.count()) > 0) await border.evaluate((el) => (el as HTMLImageElement).decode());
   await page.locator("#png").evaluate((el) => (el as HTMLImageElement).decode());
   const dom = PNG.sync.read(await page.locator("#dom .oo-card").screenshot());
   const png = PNG.sync.read(await page.locator("#png").screenshot());
@@ -68,6 +76,21 @@ for (const [name, query] of MULTI_DIGIT_CASES) {
 test("a one-unit caption drift is caught", async ({ page }) => {
   const { dom, png } = await capture(page, "fixture=portrait&coords=1&number=1&drift=1");
   expect(diffRatio(dom, png, "drift")).toBeGreaterThan(MAX_DIFF_RATIO * 3);
+});
+
+// Every registered texture, so adding one adds its screen-versus-print case.
+for (const id of Object.keys(TEXTURES)) {
+  const tier = id === "foil" ? "foil" : "fine";
+  const name = `portrait-texture-${id}`;
+  test(`${name}: the DOM card and the PNG match`, async ({ page }) => {
+    const { dom, png } = await capture(page, `fixture=portrait&coords=1&number=1&texture=${id}&tier=${tier}`);
+    expect(diffRatio(dom, png, name)).toBeLessThan(MAX_TEXTURE_DIFF_RATIO);
+  });
+}
+
+test("a one-unit border drift on the foil texture is caught", async ({ page }) => {
+  const { dom, png } = await capture(page, "fixture=portrait&coords=1&number=1&texture=foil&tier=foil&driftBorder=1");
+  expect(diffRatio(dom, png, "border-drift")).toBeGreaterThan(MAX_TEXTURE_DIFF_RATIO * 3);
 });
 
 test("CARD.baselineFromBottom is the DOM's measured baseline", async ({ page }) => {

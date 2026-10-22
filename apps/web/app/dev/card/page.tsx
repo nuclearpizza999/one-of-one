@@ -1,3 +1,4 @@
+import { TEXTURES, TIERS, type Texture, type Tier } from "@one-of-one/card";
 import { notFound } from "next/navigation";
 import { DevCard, type Fixture } from "./DevCard";
 
@@ -15,6 +16,8 @@ export default async function DevCardPage({ searchParams }: { searchParams: Prom
   const fixture = FIXTURES.find((f) => f === one(q.fixture)) ?? "portrait";
   const parsed = Number.parseInt(one(q.number) ?? "", 10);
   const number = Number.isNaN(parsed) ? 3 : parsed === 0 ? null : parsed;
+  const texture = (Object.keys(TEXTURES) as Texture[]).find((t) => t === one(q.texture)) ?? null;
+  const tier = (Object.keys(TIERS) as Tier[]).find((t) => t === one(q.tier)) ?? "fine";
   return (
     <DevCard
       fixture={fixture}
@@ -22,6 +25,9 @@ export default async function DevCardPage({ searchParams }: { searchParams: Prom
       number={number}
       longPlace={one(q.place) === "long"}
       drift={one(q.drift) === "1"}
+      texture={texture}
+      tier={tier}
+      driftBorder={one(q.driftBorder) === "1"}
     />
   );
 }
