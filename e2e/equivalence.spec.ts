@@ -14,8 +14,9 @@ import { TEXTURES } from "../packages/card/src/textures";
 const MAX_DIFF_RATIO = 0.001;
 
 // Textured cards: the two painters rasterise the SVG grain with slightly more difference than
-// text anti-aliasing alone (largest observed 0.00081 on macOS Chromium), so they get their own
+// text anti-aliasing alone (largest observed 0.00094 on macOS Chromium), so they get their own
 // tolerance by the same rule. A one-unit border drift on the foil texture must exceed three times it.
+// The border drift is exercised on the foil texture only; a sub-unit shift on another texture would pass.
 const MAX_TEXTURE_DIFF_RATIO = 0.002;
 
 const FIXTURES = ["portrait", "landscape", "square"] as const;

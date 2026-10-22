@@ -10,6 +10,7 @@ packages/card/            the card renderer: layout, DOM painter, PNG painter, f
 packages/places/          place resolution: landmark and city data, the resolver, the provider interface
 apps/web/                 the Next.js app: Board, Make, chrome
 e2e/                      Playwright tests, including the screen-versus-print diff
+dev-photos/               your own JPEGs for /dev/variation (git-ignored; create it when you want it)
 prototype/one-of-one.html the original working Make screen, kept for reference
 screens/                  fourteen HTML mockups, light and dark; open in a browser
 ```

@@ -23,6 +23,7 @@ npx playwright test -g "landscape"       one e2e case by title
 npm run lint                             ESLint (Next config) in apps/web
 npm run typecheck                        tsc for e2e, packages/card, packages/places and apps/web
 npm run fixtures                         regenerate apps/web/public/dev/* (PNG fixtures, then EXIF JPEG fixtures)
+npm run check:prod                       production build, then prove /dev/*, /api/dev/* and the Make dev panel are absent
 ```
 
 `e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring.
@@ -32,7 +33,8 @@ npm run fixtures                         regenerate apps/web/public/dev/* (PNG f
 - `packages/card` is the renderer, with no app imports. `layout.ts` is the single source of card geometry; `Card.tsx` paints it in DOM and `renderPng.ts` paints it on canvas. Fonts ship in `fonts/` and are declared in `src/card.css`.
 - `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place`, with the coordinates in a JSON body, so they never enter a URL, an access log, or any server but ours.
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
-- Build order from SPEC.md: step 1 (renderer and shell) and step 3 (metadata) are done. Next is step 2 (variation), then step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
+- Development-only surfaces, absent from production builds: the variation panel under the card on Make (switch intro, texture, tone, tier, motion, border on print), `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
+- Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata) and 2 (variation) are done. Next is step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
 
 ## Reference material
 
@@ -76,3 +78,5 @@ Next.js app, Postgres with PostGIS, object storage for photos, `exifr` for EXIF 
 - An EXIF date is wall-clock at capture with no zone. exifr builds the `Date` from its components in the device's zone and `fmtDate` reads local getters, so the card shows the date the camera recorded. Never convert to UTC. When a capture date is persisted (step 4), store the wall-clock as a zone-less string or the caption text, never `toISOString()`, which would shift the day across UTC.
 - Precision is stored as `city` or `neighborhood` (data model) and shown as City or Area (chrome). Keep each vocabulary on its own side.
 - Prefer a short status line in plain words over modal errors when metadata is missing.
+- Variation is assigned by `deriveVariation` from the photo's facts; users never pick it. Everything that varies is a registry entry in `packages/card` (`TEXTURES`, `TONES`, `TIERS`, `MOTIONS`, `INTROS`): add there, never in the panel, the gallery or the tests, which read the registries. The rule table `VARIATION_RULES` is a first draft until textures have been judged on about 50 real photos.
+- Development-only controls render only when `process.env.NODE_ENV !== "production"` and must never ship; `npm run check:prod` is the proof.
