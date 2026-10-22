@@ -49,6 +49,8 @@
 
 ### Task 1: The Supabase project: local stack, schema, policies, database tests
 
+> **Superseded in part (Oct 22, 2026, after review):** the committed migration `supabase/migrations/20261022000000_accounts_and_cards.sql` and `supabase/tests/accounts_and_cards.test.sql` (commits 10fd6fc and 548650c) are the source of truth. They differ from the SQL below in four places: `ensure_place` is also revoked from `anon`; its conflict branch changes nothing and returns the existing id; the guard decides by role (`current_user in ('authenticated', 'anon')`) with no `app.allow_publish` setting, clearing the four fields on insert and keeping them on update; and the test file has 23 assertions. Do not re-run the blocks below as written.
+
 **Files:**
 - Create: `supabase/config.toml`, `supabase/templates/magic_link.html`, `supabase/migrations/20261022000000_accounts_and_cards.sql`, `supabase/tests/accounts_and_cards.test.sql`, `scripts/supabase-env.mjs`, `apps/web/.env.example`
 - Modify: `package.json` (root), `.gitignore`, `CLAUDE.md`
