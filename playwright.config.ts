@@ -24,7 +24,7 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run dev -w apps/web -- --port 3000",
-    url: "http://localhost:3000/board",
+    url: "http://localhost:3000/dev/card?fixture=portrait",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: { ...(process.env as Record<string, string>), DEV_PHOTOS_DIR: path.resolve("apps/web/public/dev") },

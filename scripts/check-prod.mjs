@@ -14,7 +14,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitForServer() {
   for (let i = 0; i < 60; i += 1) {
     try {
-      if ((await fetch(`${base}/board`)).status === 200) return;
+      // Signed out, /board redirects; do not follow it, so the wait does not depend on /signin existing.
+      const r = await fetch(`${base}/board`, { redirect: "manual" });
+      if (r.ok || r.status === 307) return;
     } catch {
       // not up yet
     }
@@ -50,7 +52,16 @@ try {
     console.error("port 3100 is already in use; stop that server first");
     process.exit(1);
   }
-  server = spawn("npm", ["run", "start", "-w", "apps/web", "--", "--port", String(port)], { stdio: "ignore", detached: true });
+  server = spawn("npm", ["run", "start", "-w", "apps/web", "--", "--port", String(port)], {
+    stdio: "ignore",
+    detached: true,
+    env: {
+      ...process.env,
+      // The production server must boot to be probed; it never talks to Supabase during this check.
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "http://127.0.0.1:54321",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholder-for-the-production-check",
+    },
+  });
   const exited = new Promise((resolve) => {
     server.on("exit", (code) => {
       if (!stopping) failures.push(`production server exited early (code ${code})`);
@@ -66,11 +77,15 @@ try {
     check(r.status === 404, `${p} should be 404 in production, got ${r.status}`);
   }
   const make = await fetch(`${base}/make`);
-  check(make.status === 200, `/make should be 200, got ${make.status}`);
-  const html = await make.text();
-  check(!html.includes("data-dev-panel"), "/make HTML contains the dev panel");
+  check(make.redirected && new URL(make.url).pathname === "/signin", `/make should redirect to /signin when signed out, got ${make.status} at ${make.url}`);
+  const place = await fetch(`${base}/api/place`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  check(place.status === 401, `/api/place should be 401 when signed out, got ${place.status}`);
+  const signin = await fetch(`${base}/signin`);
+  check(signin.status === 200, `/signin should be 200, got ${signin.status}`);
+  const html = await signin.text();
+  check(!html.includes("data-dev-panel"), "/signin HTML contains the dev panel");
   const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/g)].map((m) => m[1]);
-  check(scripts.length > 0, "no scripts found on /make");
+  check(scripts.length > 0, "no scripts found on /signin");
   for (const src of scripts) {
     const js = await (await fetch(src.startsWith("http") ? src : `${base}${src}`)).text();
     for (const m of MARKERS) check(!js.includes(m), `${src} contains dev marker ${JSON.stringify(m)}`);
