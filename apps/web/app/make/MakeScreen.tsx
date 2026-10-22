@@ -4,9 +4,6 @@ import {
   Card,
   type LineKind,
   type VariationOverrides,
-  borderSvg,
-  cardHeightUnits,
-  renderPng,
   withOverrides,
 } from "@one-of-one/card";
 import type { PlaceMatch } from "@one-of-one/places";
@@ -21,6 +18,7 @@ import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
 import { newCardId } from "@/lib/ids";
 import { type DescribedPhoto, describePhoto, lookupPlace } from "@/lib/photo";
+import { printCard } from "@/lib/print";
 import { saveCard } from "@/lib/save";
 import { statusFor } from "@/lib/status";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -30,10 +28,6 @@ const DevVariationPanel =
   process.env.NODE_ENV === "production"
     ? null
     : dynamic(() => import("@/components/DevVariationPanel").then((m) => m.DevVariationPanel), { ssr: false });
-
-function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "card";
-}
 
 export function MakeScreen() {
   const router = useRouter();
@@ -122,49 +116,18 @@ export function MakeScreen() {
     setBusy(true);
     setStatus("Rendering the print…");
     try {
-      const border = borderOnPrint ? borderSvg(variation, cardHeightUnits(photo.width, photo.height)) : undefined;
-      const r = await renderPng({
-        image: photo.element,
-        naturalWidth: photo.width,
-        naturalHeight: photo.height,
-        place: placeText,
-        date: dateText,
-        coords: coordsText,
-        number: null,
-        border,
-      });
-      const name = `one-of-one-${slug(placeText)}.png`;
-      const file = new File([r.blob], name, { type: "image/png" });
-      const notes = [
-        r.fontsLoaded ? "" : "Printed with a fallback font.",
-        r.reduced ? "Saved at a smaller size than full print resolution." : "",
-        border && !r.borderDrawn ? "Printed without the border." : "",
-      ].filter(Boolean);
-
-      const download = (blob: Blob, fileName: string) => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = fileName;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        setStatus(["Print saved.", ...notes].join(" "));
-      };
-
-      let shared = false;
-      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ files: [file] });
-          setStatus(["Print shared.", ...notes].join(" "));
-          shared = true;
-        } catch (err) {
-          if (err instanceof Error && err.name === "AbortError") {
-            setStatus(["Share cancelled.", ...notes].join(" "));
-            shared = true;
-          }
-          // Any other failure falls through to the download below.
-        }
-      }
-      if (!shared) download(r.blob, name);
+      setStatus(
+        await printCard({
+          image: photo.element,
+          naturalWidth: photo.width,
+          naturalHeight: photo.height,
+          place: placeText,
+          date: dateText,
+          coords: coordsText,
+          variation,
+          borderOnPrint,
+        }),
+      );
     } catch {
       setStatus("Couldn't render the print. Try another photo.");
     } finally {

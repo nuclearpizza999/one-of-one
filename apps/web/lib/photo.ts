@@ -54,6 +54,8 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("The image could not be decoded"));
+    // Signed storage URLs are cross-origin; without this the canvas is tainted and the print fails.
+    img.crossOrigin = "anonymous";
     img.src = src;
   });
 }
