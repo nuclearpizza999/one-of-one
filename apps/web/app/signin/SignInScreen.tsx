@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { StatusLine } from "@/components/StatusLine";
 import { TopBar } from "@/components/TopBar";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
@@ -19,8 +20,14 @@ export function SignInScreen() {
     e.preventDefault();
     const address = email.trim();
     setBusy(true);
-    const { error } = await createBrowserSupabase().auth.signInWithOtp({ email: address });
-    setBusy(false);
+    let error: { status?: number } | null;
+    try {
+      ({ error } = await createBrowserSupabase().auth.signInWithOtp({ email: address }));
+    } catch {
+      error = {};
+    } finally {
+      setBusy(false);
+    }
     if (error) {
       setStatus(error.status === 429 ? "Wait a minute before asking for another code." : "Couldn't send a code to that address.");
       return;
@@ -32,8 +39,14 @@ export function SignInScreen() {
   async function verify(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await createBrowserSupabase().auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
-    setBusy(false);
+    let error: unknown;
+    try {
+      ({ error } = await createBrowserSupabase().auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" }));
+    } catch (thrown) {
+      error = thrown;
+    } finally {
+      setBusy(false);
+    }
     if (error) {
       setStatus("That code didn't match. Try again.");
       return;
@@ -42,14 +55,28 @@ export function SignInScreen() {
     router.refresh();
   }
 
+  function backToEmail() {
+    setSent(false);
+    setCode("");
+    setStatus("");
+  }
+
   return (
     <div className="app">
-      <TopBar />
+      <TopBar
+        right={
+          sent ? (
+            <button type="button" className="icon-target" aria-label="Back" onClick={backToEmail}>
+              <Icon name="back" size={20} />
+            </button>
+          ) : undefined
+        }
+      />
       <main className="app-main signin">
         <form className="form" onSubmit={sent ? verify : sendCode}>
           <label className="field">
             <span className="field-label">Email</span>
-            <input type="email" name="email" autoComplete="email" inputMode="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input type="email" name="email" autoComplete="email" inputMode="email" required readOnly={sent} value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
           {sent ? (
             <label className="field">
