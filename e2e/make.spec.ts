@@ -169,3 +169,57 @@ test("says so when the lookup answers with an error", async ({ page }) => {
   await expect(page.locator(".oo-line-coords")).toHaveText("37.5563° N, 126.9236° E");
   await expect(page.locator(".oo-line-date")).toHaveText("July 1st, 2026");
 });
+
+test("the dev panel switches the live card's variation and returns to the assigned one", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(nogps); // FUJIFILM: the rule assigns "worn"
+  const card = page.locator("figure.oo-card");
+  await expect(card).toHaveAttribute("data-texture", "worn");
+  await expect(page.locator("img.oo-border-img")).toHaveCount(1);
+  await expect(page.locator("[data-dev-assigned]")).toContainText("Assigned: worn");
+
+  const texture = page.locator(".dev-field", { hasText: "Texture" });
+  await texture.getByRole("button", { name: "Foil" }).click();
+  await expect(card).toHaveAttribute("data-texture", "foil");
+  await texture.getByRole("button", { name: "Assigned" }).click();
+  await expect(card).toHaveAttribute("data-texture", "worn");
+
+  const tone = page.locator(".dev-field", { hasText: "Tone" });
+  await tone.getByRole("button", { name: "Photo" }).click();
+  await expect(card).toHaveAttribute("data-tone", "photo");
+
+  const tier = page.locator(".dev-field", { hasText: "Tier" });
+  await tier.getByRole("button", { name: "Animated" }).click();
+  await expect(card).toHaveAttribute("data-motion", "sheen");
+  await expect(page.locator(".oo-frame")).toHaveClass(/oo-motion-sheen/);
+
+  const intro = page.locator(".dev-field", { hasText: "Intro" });
+  await intro.getByRole("button", { name: "Flip" }).click();
+  await expect(page.locator(".oo-frame")).toHaveClass(/oo-intro-flip/);
+});
+
+test("the printed PNG carries the border, differs between textures, and can leave it off", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  const texture = page.locator(".dev-field", { hasText: "Texture" });
+  const borderOnPrint = page.locator(".dev-field", { hasText: "Border on print" });
+  const print = async () => {
+    const dl = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Print" }).click();
+    return readFileSync((await (await dl).path())!);
+  };
+
+  await texture.getByRole("button", { name: "Foil" }).click();
+  const foil = await print();
+  await expect(page.getByRole("status")).toContainText("Print saved.");
+  await expect(page.getByRole("status")).not.toContainText("without the border");
+  expect(PNG.sync.read(foil).width).toBe(1000);
+
+  await texture.getByRole("button", { name: "Paper" }).click();
+  const paper = await print();
+  expect(foil.equals(paper)).toBe(false);
+
+  await borderOnPrint.getByRole("button", { name: "Off" }).click();
+  const plain = await print();
+  expect(plain.equals(paper)).toBe(false);
+});
