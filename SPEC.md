@@ -87,19 +87,21 @@ The prototype counts locally in the browser per place label; the real count live
 
 ## Screens
 
-Seven screens, icon-only navigation. The tab bar has three slots: Board, an empty middle slot, Make. Guide takes the middle slot in phase two. Sketches are in `screens/` (open any file in a browser; light and dark versions of each of the seven). Each screen links to the next.
+Seven screens and a sign-in screen, icon-only navigation. The tab bar has three slots: Board, an empty middle slot, Make. Guide takes the middle slot in phase two. Sketches are in `screens/` (open any file in a browser; light and dark versions of each of the seven). Each screen links to the next.
 
 | Screen | What it does | Notes for the build |
 | --- | --- | --- |
-| 1 Make | Pick a photo, see the card fill itself, then the assigned intro reveals its border; a three-cell strip: replay intro, add to board (filled), print | Empty state is the blank mat with "Tap to add a photo". The number slot stays blank until the card is public. Caption lines edit in place. No intro picker: the intro is assigned with the variation, and replay plays the same one again. Top bar: 1/1 mark left, × to cancel right. |
-| 2 Add to board | Sheet over Make: place and the number you will get; a pin-icon strip for precision (Area default, City), always shown, venue cards included; one filled button with the grid-plus icon | The only place the number is assigned. No guide tag in v1; the sheet only numbers the card. Area means neighborhood. See Open decisions for what "add to board" means for a card the user wants to keep private. |
-| 3 Board | Your own cards as a 3-across grid of square crops, edge to edge, 2px gaps, no mats or captions; storyboards reachable from here; card count in the top bar | The board thumbnail is the one place in the product where a photo is cropped. Tap opens the full card (mat, caption, number, border) with the same action strip as Make. Newest first. |
+| 1 Make | Pick a photo, see the card fill itself, then the assigned intro reveals its border; a three-cell strip: replay intro, add to board (filled), print | Empty state is the blank mat with "Tap to add a photo". The number slot stays blank until the card is public. Caption lines edit in place. No intro picker: the intro is assigned with the variation, and replay plays the same one again. Add to board saves the card to your board, private and unnumbered, and returns to the Board (decided Oct 22, 2026). Top bar: 1/1 mark left, × to cancel right. |
+| 2 Add to board | Sheet over the opened card: place and the number you will get; a pin-icon strip for precision (Area default, City), always shown, venue cards included; one filled button with the grid-plus icon | The only place the number is assigned, and the step that makes a card public. Opens from the opened card's strip, not from Make (decided Oct 22, 2026; the mockup still draws it over Make). No guide tag in v1; the sheet only numbers the card. Area means neighborhood. |
+| 3 Board | Your own cards as rows of whole photos: each row packs as many as fit at a base height and is rescaled to run margin to margin, so row heights vary and nothing is cropped; 2px gutters in the wall colour, no mats or captions; storyboards reachable from here; card count in the top bar | Tap opens the full card (mat, caption, number, border) with the same action strip as Make and a Back arrow in the top bar. Newest first, left to right then down. |
 | 4 Storyboard | An ordered set of your own cards with a title, in the same square grid; drag to reorder; a two-cell strip: add cards, copy share link (filled) | Own cards only in v1. The link opens without an account and is not listed anywhere. ← returns to Board. |
 | 5 Shared card | What a friend sees from a link: the full card, then a one-row strip with the venue name and a navigation arrow that opens Apple Maps on iOS and Google Maps elsewhere | No account, no tab bar; the link previews as the card image. Directions use the venue's public coordinates; cards without a venue show the strip with no arrow. |
 | 6 Print | Card preview, size strip (5 × 7, 8 × 10, 11 × 14), paper strip (Matte, Luster), border strip (Plain, Border), price, filled bag button | Print file is the export PNG at native resolution; the mat is part of the print. Border prints the card's static border texture; Plain prints the white mat only. ← goes back. |
 | 7 Guide (phase two) | A city's human-curated picks: a single column of full cards, each with a strip beneath carrying the venue name and the directions arrow; city name in the top bar; the pin icon fills the middle tab slot | A curator picks from public cards in the city. Cards not picked never appear and are never marked. No likes, follows or ranking by popularity. |
 
-The sketches match this table as of Oct 21, 2026.
+The sketches match this table as of Oct 21, 2026, except the Board, which became rows of whole photos on Oct 22, 2026, and the sheet, which moved to the opened card.
+
+Sign-in: the app opens on a sign-in screen and nothing else shows until you are in. One field for the email, a six-digit code sent to it and typed back, no passwords. The code rather than a tapped link, because a link opens in whatever browser the mail app launches. Google and Apple sign-in can be added later; the account stays the email.
 
 ### Chrome design system
 
@@ -117,7 +119,8 @@ Hairlines, a grotesk in small capitals, and thin-line icons; the card is the onl
 | Buttons | 48 to 52px tall, square corners; primary fills with ink, secondary is a 1px rule |
 | Top bar | 48px, 1/1 wordmark at 13px left, one 44px icon target right |
 | Tab bar | 84px with a 1px top rule; three 48 × 44px slots: grid, an empty slot, plus (the pin icon fills the middle slot as Guide in phase two); active in ink with a 1px underline, inactive muted |
-| Grid | 3 columns of 128px square crops at 390px width, 2px gaps, object-fit cover, no borders; the only cropped view of a photo in the product. Storyboards use the same grid |
+| Rows | whole photos at a base height of clamp(120px, 36vw, 240px), packed as many to a row as fit and rescaled to the margins, 2px gutters in the ground colour, no borders; the last row stays left-aligned at the base height. Nothing is cropped. Storyboards use the same rows |
+| Fields | 48px tall, 1px rule, chrome type, the label above in strip text style; used on the sign-in screen |
 | Card | unchanged in both themes: Polaroid-style white mat, no frame, EB Garamond 600 caption on the bottom strip, plus the derived border variation |
 
 Icons first, words where an icon would be ambiguous. Words in the chrome so far: place and venue names, numbers, size, paper and border values (Plain / Border), Area / City, storyboard titles. Add a word rather than a cryptic icon; keep it to one or two, uppercase, in the strip style.
@@ -136,7 +139,7 @@ Seven tables carry the product. Counts and guide listings are derived from cards
 | storyboard\_cards | storyboard\_id, card\_id, position | A card can sit in several storyboards. |
 | guide\_picks | id, card\_id, city\_place\_id, curator\_id, position, picked\_at | A curator's pick for a city's guide. No pick, no listing; unpicked cards carry no status. Phase two. |
 
-Storage: original photo in object storage (private), plus a public rendition at 2048 px long edge for board thumbnails, and the card PNG, drawn by the owner's phone at full resolution whenever the card's content changes (made, numbered, precision changed, print ordered) and stored. Prints and link previews use that stored file; nothing is rendered on the server.
+Storage: original photo in object storage (private), plus a 2048 px rendition and a 512 px thumbnail, both re-encoded by the owner's phone without EXIF when the card is saved, private until the card is public. The card PNG for link previews is drawn by the owner's phone from step 6 whenever the card's content changes (numbered, precision changed) and stored at preview size; prints are drawn from the original at order time, since a full-resolution PNG runs to tens of megabytes. Nothing is rendered on the server.
 
 The card number is a single transaction: insert the card as public, increment places.card\_count, write the resulting value to cards.number.
 
@@ -231,7 +234,7 @@ What gets replaced:
 ## Open decisions
 
 - [x] Web app first or native first? Decided Oct 21, 2026: web first. Native reads RAW previews and full EXIF from the camera roll, but web ships faster and already works; a native app can reuse the renderer package later.
-- [ ] What "add to board" means for a card the user wants to keep private: today every made card is on the board and the sheet is where it goes public and gets its number, so there is no explicit private save. Decide when it comes up in the build.
+- [x] What "add to board" means for a card the user wants to keep private. Decided Oct 22, 2026: Add to board on Make saves the card privately and unnumbered; the sheet that numbers it and makes it public opens from the opened card.
 - [ ] Guide tags (phase two): a fixed list (Restaurants, Car spots, Street) or free text with curation? Car spots and Street have no venue to hand off directions to.
 - [ ] Variation: which EXIF and place inputs map to which tiers, and how rare the top tier is. Settle after generating textures for about 50 real photos.
 - [ ] Guide curators: who curates the first one or two cities.
@@ -241,4 +244,4 @@ What gets replaced:
 
 Decided Oct 21, 2026: the map is gone and Guide takes its tab slot in phase two; the board stays a 3-across grid of square crops, the only cropped view in the product; precision is Area / City on every card, no Exact; the intro is assigned, not picked; no guide tag in v1; each public card gets the next number, even a second card by the same person; a photo that matches nothing gets a blank place line with a hint; the border variation is an option on prints (Plain / Border); directions open the platform's maps app; web first, with the card renderer as a standalone package a native app can reuse; the owner's phone draws the card PNG and the server stores it, with no server rendering.
 
-Decided Oct 22, 2026: the border covers the whole mat, the white around the photo and the caption strip, and never the photo. Until then foil, wear and the sheen sat on a band two units wide at the card's edge, which was invisible at phone size. "Caption contrast is never reduced" became the contrast floor in Card variation.
+Decided Oct 22, 2026: the border covers the whole mat, the white around the photo and the caption strip, and never the photo. Until then foil, wear and the sheen sat on a band two units wide at the card's edge, which was invisible at phone size. "Caption contrast is never reduced" became the contrast floor in Card variation. Also decided Oct 22, 2026: Supabase (hosted free tier, the same open-source stack as the exit) carries accounts, Postgres and photo storage; sign-in comes first, by email and a six-digit code; Add to board saves privately and the number comes later from the opened card; the Board is rows of whole photos packed to fit and rescaled to the margins, so nothing in the product crops a photo; the card id is made at pick time and seeds the variation; prints come last in the build order.

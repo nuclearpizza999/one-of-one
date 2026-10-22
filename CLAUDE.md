@@ -54,15 +54,15 @@ npm run check:prod                       production build, then prove /dev/*, /a
 ### Reading the mockups
 
 - Each file is a self-contained 390 × 844 phone frame with inline styles; there is no shared stylesheet. Light and dark twins differ only in ground, ink, muted and rule colors.
-- Navigation as linked: Make → Add to board (a sheet over Make) → Board. Make → Print. Storyboard → Shared card, which is what a link opens and has no tab bar, → Guide (phase two). Storyboard's back arrow returns to Board, but the Board mockup has no link into a storyboard; SPEC.md says storyboards are reached from the Board.
-- The mockup cards size the photo in fixed px with `object-fit: cover` so the frames line up. That is a mockup shortcut. The real card never crops; take card geometry from the table in SPEC.md and only the chrome from the mockups.
+- Navigation as linked: Make → Add to board (a sheet over Make) → Board. Make → Print. Storyboard → Shared card, which is what a link opens and has no tab bar, → Guide (phase two). Storyboard's back arrow returns to Board, but the Board mockup has no link into a storyboard; SPEC.md says storyboards are reached from the Board. Decided Oct 22, 2026, after the mockups: Add to board on Make saves privately and returns to the Board; the sheet opens from the opened card; the Board is rows of whole photos, not the mockup's square grid.
+- The mockup cards size the photo in fixed px with `object-fit: cover` so the frames line up, and the Board mockup is a square grid. Both are mockup shortcuts. Nothing in the product crops a photo; take card geometry from the table in SPEC.md, the Board rows from SPEC.md's Screens table, and only the chrome from the mockups.
 - The `aria-label` text on the mockups' icon-only controls is the vocabulary to reuse: Make, Board, Cancel, Back, Replay intro, Add to board, Print, Add cards, Copy share link, Order print, Location shown as, Directions to <venue>.
 
 ## Rules that never bend
 
 - The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them.
 - Card dimensions are percentages of card width (see the table in SPEC.md). One shared layout function feeds the screen painter and the print painter. Pixel-equivalent means a screenshot diff of the two passes within a small tolerance for text anti-aliasing; a one-unit layout drift fails it.
-- The photo is cropped in exactly one place: the square thumbnails on the Board and Storyboard grids. Everywhere else it is shown whole.
+- The photo is never cropped. The Board and Storyboard rows show it whole at a shared row height; the card shows it whole everywhere else.
 - The card number is assigned server-side in one transaction when a card goes public: one per card, next in sequence for that place, never reissued, never computed on the client.
 - Chrome is icons first; words only where an icon would be ambiguous (place and venue names, numbers, size, paper, Plain / Border, Area / City, storyboard titles). Every icon-only control has an aria-label.
 - The tab bar has three slots: Board, empty, Make. The middle slot is reserved for Guide in phase two. There is no map.
