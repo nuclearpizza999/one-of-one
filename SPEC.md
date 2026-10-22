@@ -117,8 +117,8 @@ Hairlines, a grotesk in small capitals, and thin-line icons; the card is the onl
 | Icons | inline SVG on a 24 viewBox drawn at 22px, 1.5px stroke, round caps, ink color, aria-label on every icon-only control. Set: grid, pin, plus, ×, ←, replay, grid-plus, printer, bag, navigation arrow, link (fork and knife, car and street return with guide tags in phase two) |
 | Strips | equal cells inside a 1px rule with 1px dividers, 44px tall; the selected cell fills with ink and its content inverts |
 | Buttons | 48 to 52px tall, square corners; primary fills with ink, secondary is a 1px rule |
-| Top bar | 48px, 1/1 wordmark at 13px left, one 44px icon target right |
-| Tab bar | 84px with a 1px top rule; three 48 × 44px slots: grid, an empty slot, plus (the pin icon fills the middle slot as Guide in phase two); active in ink with a 1px underline, inactive muted |
+| Top bar | 48px, 1/1 wordmark at 13px left, one 44px icon target right; fixed at the top of the screen while the screen's middle scrolls |
+| Tab bar | 84px with a 1px top rule; three 48 × 44px slots: grid, an empty slot, plus (the pin icon fills the middle slot as Guide in phase two); active in ink with a 1px underline, inactive muted; fixed at the bottom of the screen while the screen's middle scrolls (decided Oct 22, 2026) |
 | Rows | whole photos at a base height of clamp(120px, 36vw, 240px), packed as many to a row as fit and rescaled to the margins, 2px gutters in the ground colour, no borders; the last row stays left-aligned at the base height. Nothing is cropped. Storyboards use the same rows |
 | Fields | 48px tall, 1px rule, chrome type, the label above in strip text style; used on the sign-in screen |
 | Card | unchanged in both themes: Polaroid-style white mat, no frame, EB Garamond 600 caption on the bottom strip, plus the derived border variation |
