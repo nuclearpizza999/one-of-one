@@ -46,7 +46,6 @@ button:disabled {
   outline-offset: 2px;
 }
 
-/* Frame: one phone-width column. */
 /* Frame: one phone-width column, exactly one screen tall. Only the middle scrolls; the bars stay put. */
 .app {
   display: flex;
