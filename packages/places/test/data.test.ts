@@ -30,6 +30,9 @@ describe("cities", () => {
     }
     expect(CITIES[0]).toEqual(["Shanghai", "China", 31.222, 121.458]);
   });
+  it("city keys are unique", () => {
+    expect(new Set(CITIES.map(([n, r, la, ln]) => `${n}, ${r}@${la},${ln}`)).size).toBe(CITIES.length);
+  });
   it("carries US cities with their state as the region", () => {
     expect(CITIES.find(([name, region]) => name === "San Francisco" && region === "California")).toBeDefined();
     expect(CITIES.find(([name, region]) => name === "Seoul" && region === "South Korea")).toBeDefined();

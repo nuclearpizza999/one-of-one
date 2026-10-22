@@ -42,12 +42,12 @@ describe("placeLabel", () => {
 describe("resolvePlace with real data", () => {
   it("finds the Golden Gate Bridge from a point on it", async () => {
     const m = await resolvePlace(37.8199, -122.4783);
-    expect(m).toMatchObject({ kind: "landmark", label: "Golden Gate Bridge, San Francisco", key: "landmark:Golden Gate Bridge, San Francisco" });
+    expect(m).toMatchObject({ kind: "landmark", label: "Golden Gate Bridge, San Francisco", key: "landmark:Golden Gate Bridge, San Francisco@37.8199,-122.4783" });
     expect(m!.distanceM).toBeLessThan(5);
   });
   it("finds Seoul from a street in Hongdae", async () => {
     const m = await resolvePlace(37.5563, 126.9236);
-    expect(m).toMatchObject({ kind: "city", name: "Seoul", region: "South Korea", label: "Seoul, South Korea", key: "city:Seoul, South Korea" });
+    expect(m).toMatchObject({ kind: "city", name: "Seoul", region: "South Korea", label: "Seoul, South Korea", key: "city:Seoul, South Korea@37.566,126.978" });
     expect(m!.lat).toBeCloseTo(37.5, 0);
   });
   it("gives the state for a US city", async () => {
@@ -96,5 +96,15 @@ describe("resolvePlace tiers with a tiny world", () => {
     const m = await resolvePlace(0.001, 0, p, tiny);
     expect(m!.kind).toBe("landmark");
     expect(askedHood).toBe(false);
+  });
+  it("a rejecting venue provider falls through to the landmark", async () => {
+    const p: PlaceProvider = { venueNear: () => Promise.reject(new Error("outage")), neighborhoodAt: async () => null };
+    const m = await resolvePlace(0.001, 0, p, tiny);
+    expect(m!.kind).toBe("landmark");
+  });
+  it("a rejecting neighborhood provider falls through to the city", async () => {
+    const p: PlaceProvider = { venueNear: async () => null, neighborhoodAt: () => Promise.reject(new Error("outage")) };
+    const m = await resolvePlace(0.006, 0, p, tiny);
+    expect(m!.kind).toBe("city");
   });
 });

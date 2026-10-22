@@ -5,7 +5,7 @@ test("the Golden Gate Bridge resolves to the landmark", async ({ request }) => {
   expect(r.status()).toBe(200);
   expect(r.headers()["cache-control"]).toBe("no-store");
   const { match } = await r.json();
-  expect(match).toMatchObject({ kind: "landmark", label: "Golden Gate Bridge, San Francisco", key: "landmark:Golden Gate Bridge, San Francisco" });
+  expect(match).toMatchObject({ kind: "landmark", label: "Golden Gate Bridge, San Francisco", key: "landmark:Golden Gate Bridge, San Francisco@37.8199,-122.4783" });
 });
 
 test("a street in Hongdae resolves to Seoul", async ({ request }) => {

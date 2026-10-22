@@ -9,7 +9,7 @@ export interface PlaceMatch {
   region: string;
   /** The caption's place line. */
   label: string;
-  /** Stable id for numbering: `${kind}:${label}`. */
+  /** Stable id for numbering: kind, label and the place's own coordinates, so two places with one name never share a pool. */
   key: string;
   /** The place's own coordinates, never the photo's. */
   lat: number;
@@ -18,7 +18,10 @@ export interface PlaceMatch {
   distanceM: number;
 }
 
-/** The two tiers that need a places or geocoding API. Step 3 ships only the stub. */
+/**
+ * The two tiers that need a places or geocoding API. Step 3 ships only the stub.
+ * A provider that rejects is treated as no match, so an API outage still resolves to a landmark or city.
+ */
 export interface PlaceProvider {
   venueNear(lat: number, lng: number, radiusM: number): Promise<PlaceMatch | null>;
   neighborhoodAt(lat: number, lng: number): Promise<PlaceMatch | null>;
@@ -43,9 +46,13 @@ export function placeLabel(name: string, region: string): string {
   return `${name}, ${region}`;
 }
 
+export function placeKey(kind: PlaceKind, label: string, lat: number, lng: number): string {
+  return `${kind}:${label}@${lat},${lng}`;
+}
+
 function match(kind: PlaceKind, name: string, region: string, lat: number, lng: number, d: number): PlaceMatch {
   const label = placeLabel(name, region);
-  return { kind, name, region, label, key: `${kind}:${label}`, lat, lng, distanceM: d };
+  return { kind, name, region, label, key: placeKey(kind, label, lat, lng), lat, lng, distanceM: d };
 }
 
 /**
@@ -58,7 +65,7 @@ export async function resolvePlace(
   provider: PlaceProvider = noProvider,
   data: PlaceData = DEFAULT_DATA,
 ): Promise<PlaceMatch | null> {
-  const venue = await provider.venueNear(lat, lng, VENUE_RADIUS_M);
+  const venue = await provider.venueNear(lat, lng, VENUE_RADIUS_M).catch(() => null);
   if (venue) return venue;
 
   for (const l of data.landmarks) {
@@ -66,7 +73,7 @@ export async function resolvePlace(
     if (d <= l.radiusM) return match("landmark", l.name, l.region, l.lat, l.lng, d);
   }
 
-  const hood = await provider.neighborhoodAt(lat, lng);
+  const hood = await provider.neighborhoodAt(lat, lng).catch(() => null);
   if (hood) return hood;
 
   let best: City | null = null;
