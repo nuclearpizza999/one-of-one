@@ -19,7 +19,8 @@ import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
-import { type DescribedPhoto, describePhoto } from "@/lib/photo";
+import { newCardId } from "@/lib/ids";
+import { type DescribedPhoto, describePhoto, lookupPlace } from "@/lib/photo";
 import { statusFor } from "@/lib/status";
 
 /** Development builds only. The condition is resolved at build time, so production bundles contain no panel code. */
@@ -75,7 +76,8 @@ export function MakeScreen() {
     if (!file) return;
     const seq = ++pickSeq.current;
     setStatus("Reading the photo…");
-    const described = await describePhoto(file);
+    // The card's id exists from the first moment, so the border and intro shown now are what the save writes.
+    const described = await describePhoto(file, lookupPlace, newCardId());
     // A newer pick has superseded this one; drop its result so it cannot overwrite the newer photo.
     if (seq !== pickSeq.current) {
       if (described) URL.revokeObjectURL(described.src);

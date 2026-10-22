@@ -217,4 +217,13 @@ describe("variationSeed", () => {
     expect(variationSeed({ ...facts, camera: null })).not.toBe(base);
     expect(variationSeed({ ...facts, camera: { make: "Apple", model: "iPhone 16" } })).not.toBe(base);
   });
+  it("folds the card id in when there is one, and is unchanged without it", () => {
+    const without = variationSeed(facts);
+    expect(variationSeed({ ...facts, cardId: undefined })).toBe(without);
+    const a = variationSeed({ ...facts, cardId: "7c1d9a6e-0d3f-4f7e-9c3a-0b6f8a9e1b2c" });
+    const b = variationSeed({ ...facts, cardId: "c1b2a3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d" });
+    expect(a).not.toBe(without);
+    expect(a).not.toBe(b);
+    expect(a).toBe(variationSeed({ ...facts, cardId: "7c1d9a6e-0d3f-4f7e-9c3a-0b6f8a9e1b2c" }));
+  });
 });

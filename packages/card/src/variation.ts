@@ -219,14 +219,17 @@ export interface SeedFacts {
   height: number;
   takenAtMs: number | null;
   camera: { make: string; model: string } | null;
+  /** The card's id, made when the photo is picked, so two cards of one photo differ. Absent in the gallery and the dev card. */
+  cardId?: string;
 }
 
 /**
- * The seed until cards have ids (step 4): FNV-1a over the photo's facts, so the
+ * FNV-1a over the photo's facts and, once it exists, the card id (SPEC.md: the
+ * variation is a function of the card id plus the inputs). Without an id the
  * same photo always gets the same variation on the same device.
  */
 export function variationSeed(f: SeedFacts): number {
-  const input = `${f.sizeBytes}:${f.width}:${f.height}:${f.takenAtMs ?? 0}:${f.camera?.make ?? ""}|${f.camera?.model ?? ""}`;
+  const input = `${f.sizeBytes}:${f.width}:${f.height}:${f.takenAtMs ?? 0}:${f.camera?.make ?? ""}|${f.camera?.model ?? ""}${f.cardId ? `:${f.cardId}` : ""}`;
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i += 1) {
     hash ^= input.charCodeAt(i);

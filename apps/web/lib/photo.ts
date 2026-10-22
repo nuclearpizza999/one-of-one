@@ -18,6 +18,8 @@ export interface Caption {
 
 export interface DescribedPhoto {
   file: File;
+  /** The card's id, made at pick time; null where no card exists (the gallery). */
+  id: string | null;
   src: string;
   width: number;
   height: number;
@@ -79,7 +81,11 @@ export function samplePhotoPalette(img: HTMLImageElement, size = 32): Palette | 
  * the place, build the caption, sample the palette, derive the variation.
  * Returns null when the image cannot be decoded (its object URL is revoked).
  */
-export async function describePhoto(file: File, lookup: PlaceLookup = lookupPlace): Promise<DescribedPhoto | null> {
+export async function describePhoto(
+  file: File,
+  lookup: PlaceLookup = lookupPlace,
+  cardId: string | null = null,
+): Promise<DescribedPhoto | null> {
   const src = URL.createObjectURL(file);
   const [img, meta] = await Promise.all([
     loadImage(src).catch(() => null),
@@ -114,6 +120,7 @@ export async function describePhoto(file: File, lookup: PlaceLookup = lookupPlac
     height: img.naturalHeight,
     takenAtMs: exifTime ? wallClockMs(exifTime) : null,
     camera: meta.camera,
+    cardId: cardId ?? undefined,
   });
   const variation = deriveVariation({
     seed,
@@ -124,5 +131,5 @@ export async function describePhoto(file: File, lookup: PlaceLookup = lookupPlac
     photoPalette: palette,
   });
 
-  return { file, src, width: img.naturalWidth, height: img.naturalHeight, element: img, meta, match, lookupFailed, caption, palette, variation };
+  return { file, id: cardId, src, width: img.naturalWidth, height: img.naturalHeight, element: img, meta, match, lookupFailed, caption, palette, variation };
 }
