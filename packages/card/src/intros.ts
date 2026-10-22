@@ -32,5 +32,6 @@ export function seedFromPhoto(sizeBytes: number, width: number, height: number):
 }
 
 export function assignIntro(seed: number): Intro {
-  return INTROS[Math.abs(seed) % INTROS.length]!;
+  // >>> 0 coerces any number, including NaN and non-integers, to an unsigned 32-bit index.
+  return INTROS[(seed >>> 0) % INTROS.length]!;
 }
