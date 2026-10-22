@@ -45,9 +45,10 @@
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: 5cqw 5cqw 0;
+  padding: var(--oo-mat) var(--oo-mat) 0;
   background: #fff;
-  color: #111;
+  color: var(--oo-ink);
+  -webkit-font-smoothing: antialiased;
 }
 /* Hairline and shadow are drawn as box-shadow so they never change the box. */
 .oo-card[data-wall="light"] {
@@ -86,22 +87,26 @@
   align-items: center;
   justify-content: center;
   padding: 0 10cqw;
-  font: italic 400 4cqw/1.3 "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 4cqw;
+  line-height: 1.3;
+  font-family: var(--oo-font);
   color: #777;
   text-align: center;
 }
 .oo-plate {
   box-sizing: border-box;
-  height: 19.2cqw;
+  height: var(--oo-strip);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 0 3cqw 3.6cqw;
-  font-family: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
-  font-size: 3.4cqw;
-  font-weight: 600;
-  line-height: 1.32;
-  color: #111;
+  padding: 0 var(--oo-inset) var(--oo-bottom);
+  font-family: var(--oo-font);
+  font-size: var(--oo-fs);
+  font-weight: var(--oo-weight);
+  line-height: var(--oo-lh);
+  color: var(--oo-ink);
 }
 .oo-lines {
   display: flex;
@@ -114,14 +119,17 @@
   outline: none;
 }
 .oo-line-place {
-  max-width: 64.8cqw;
+  max-width: var(--oo-place-max);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .oo-line-coords {
-  font-weight: 400;
-  color: #333;
+  font-weight: var(--oo-weight-coords);
+  color: var(--oo-ink-coords);
+}
+.oo-card .oo-line:focus-visible {
+  outline: none;
 }
 .oo-card[data-editable="true"] .oo-line:empty::before {
   content: attr(data-hint);

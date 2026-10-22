@@ -1,7 +1,9 @@
 "use client";
 
-import type { FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
+import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
 import type { IntroId } from "./intros";
+import { CARD_FONT_FAMILY } from "./fonts";
+import { CARD } from "./layout";
 import type { LineKind } from "./layout";
 
 export interface CardPhoto {
@@ -46,6 +48,22 @@ export function startsInCaption(target: EventTarget | null): boolean {
   const el = target as { closest?: (selector: string) => unknown } | null;
   return typeof el?.closest === "function" && el.closest("[contenteditable]") != null;
 }
+
+/** Geometry and type for card.css, fed from CARD so the two painters share one source. Built once. */
+const FRAME_VARS = {
+  "--oo-mat": `${CARD.mat}cqw`,
+  "--oo-strip": `${CARD.stripHeight}cqw`,
+  "--oo-inset": `${CARD.inset}cqw`,
+  "--oo-bottom": `${CARD.bottom}cqw`,
+  "--oo-fs": `${CARD.fontSize}cqw`,
+  "--oo-lh": `${CARD.lineHeight}`,
+  "--oo-place-max": `${CARD.photoWidth * CARD.placeMaxWidthRatio}cqw`,
+  "--oo-font": CARD_FONT_FAMILY,
+  "--oo-ink": CARD.ink,
+  "--oo-ink-coords": CARD.inkCoords,
+  "--oo-weight": `${CARD.weight}`,
+  "--oo-weight-coords": `${CARD.weightCoords}`,
+} as CSSProperties;
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -99,7 +117,7 @@ export function Card({
   };
 
   return (
-    <div className={frameClass} id={id} key={replayKey}>
+    <div className={frameClass} id={id} key={replayKey} style={FRAME_VARS}>
       <figure
         className="oo-card"
         data-wall={wall}

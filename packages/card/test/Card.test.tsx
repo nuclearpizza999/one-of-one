@@ -48,13 +48,15 @@ describe("Card with a photo", () => {
 
   it("applies the intro class on the frame and the wall on the card", () => {
     const html = renderToStaticMarkup(<Card photo={photo} {...caption} intro="flip" wall="dark" id="c" />);
-    expect(html).toContain('<div class="oo-frame oo-intro-flip" id="c">');
+    expect(html).toContain('class="oo-frame oo-intro-flip"');
+    expect(html).toContain('id="c"');
     expect(html).toContain('data-wall="dark"');
   });
 
   it("defaults to the light wall and no intro", () => {
     const html = renderToStaticMarkup(<Card photo={photo} {...caption} />);
-    expect(html).toContain('<div class="oo-frame">');
+    expect(html).toContain('class="oo-frame"');
+    expect(html).toContain("--oo-mat:5cqw");
     expect(html).toContain('data-wall="light"');
   });
 

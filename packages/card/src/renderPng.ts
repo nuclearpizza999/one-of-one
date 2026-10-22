@@ -1,5 +1,5 @@
 import { cardFont, loadCardFonts } from "./fonts";
-import { layoutCard } from "./layout";
+import { CARD, layoutCard } from "./layout";
 
 /** Photo width cap for the print PNG, in pixels. 300 dpi at 12 inches needs 3600. */
 export const PRINT_CAP = 4800;
@@ -82,8 +82,8 @@ export function drawCard(ctx: Ctx2D, image: CanvasImageSource, dims: PrintDims, 
     ctx.fillText(text, layout.text.left * u, yFromBottom(line.baselineY));
   }
   if (layout.number) {
-    ctx.font = cardFont(600, fs);
-    ctx.fillStyle = "#111";
+    ctx.font = cardFont(CARD.weight, fs);
+    ctx.fillStyle = CARD.ink;
     ctx.textAlign = "right";
     ctx.fillText(layout.number.text, layout.text.right * u, yFromBottom(layout.number.baselineY));
   }

@@ -39,7 +39,9 @@ button {
 button:disabled {
   cursor: default;
 }
-:focus-visible {
+.icon-target:focus-visible,
+.tab:focus-visible,
+.strip-cell:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }

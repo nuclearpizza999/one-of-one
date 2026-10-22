@@ -13,6 +13,10 @@ export const CARD = {
   inset: 3,
   bottom: 3.6,
   placeMaxWidthRatio: 0.72,
+  ink: "#111",
+  inkCoords: "#333",
+  weight: 600,
+  weightCoords: 400,
   /**
    * Distance from the bottom of a line box to its baseline, as a fraction
    * of font size, for EB Garamond at line-height 1.32. Measured once by the
@@ -67,9 +71,9 @@ export function layoutCard(spec: CardSpec): CardLayout {
   const lastBaseline = height - CARD.bottom - fontSize * CARD.baselineFromBottom;
 
   const candidates: Array<Omit<CaptionLine, "baselineY">> = [
-    { kind: "place", text: spec.place.trim(), weight: 600, color: "#111" },
-    { kind: "date", text: spec.date.trim(), weight: 600, color: "#111" },
-    { kind: "coords", text: spec.coords.trim(), weight: 400, color: "#333" },
+    { kind: "place", text: spec.place.trim(), weight: CARD.weight, color: CARD.ink },
+    { kind: "date", text: spec.date.trim(), weight: CARD.weight, color: CARD.ink },
+    { kind: "coords", text: spec.coords.trim(), weight: CARD.weightCoords, color: CARD.inkCoords },
   ];
   const present = candidates.filter((l) => l.text.length > 0);
   const lines: CaptionLine[] = present.map((l, i) => ({
