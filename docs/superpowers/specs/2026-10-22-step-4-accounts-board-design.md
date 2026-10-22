@@ -78,8 +78,8 @@ create index cards_user_created on cards (user_id, created_at desc);
 ```
 
 - **Row-level security.** `cards`: the owner (`user_id = auth.uid()`) may select, insert, update and delete, nobody else. `places`: any signed-in user may select; inserts go only through `ensure_place`. `users`: the owner may select their row.
-- **A guard trigger on `cards`** forces `number`, `is_public`, `published_at` and `share_token` to their empty values on every insert or update made as an authenticated user, so a client can never number or publish a card. Step 5 assigns numbers through a security-definer function.
-- **`ensure_place(kind, name, region, lat, lng, radius_m, provider_ref) returns uuid`**, security definer, granted to authenticated users: upserts on `provider_ref` and returns the id. Step 5 will own the hierarchy and the counter.
+- **A guard trigger on `cards`** clears `number`, `is_public`, `published_at` and `share_token` on insert and keeps them unchanged on update whenever the caller is the authenticated or anon role, so a client can neither set nor change them and only a security-definer function (step 5's numbering) can publish.
+- **`ensure_place(kind, name, region, lat, lng, radius_m, provider_ref) returns uuid`**, security definer, granted to authenticated only (revoked from anon): inserts on a new `provider_ref` and returns the existing id unchanged on a repeat. Step 5 will own the hierarchy and the counter.
 - **Buckets** `originals`, `renditions` and `cards`, all private, created by migration. Object paths start with the owner's id: `originals/<user>/<card>.<ext>`, `renditions/<user>/<card>/2048.jpg`, `renditions/<user>/<card>/512.jpg`. Policies on `storage.objects` allow each operation only when the first path segment equals `auth.uid()`. File size limits: 50 MB on originals (the free tier's cap), 5 MB on renditions. The `cards` bucket is created now for step 6 and stays empty.
 - **Reads** use signed URLs (one hour) made on the server for the Board and the opened card.
 

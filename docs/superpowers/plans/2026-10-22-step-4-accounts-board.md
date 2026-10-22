@@ -54,7 +54,7 @@
 - Modify: `package.json` (root), `.gitignore`, `CLAUDE.md`
 
 **Interfaces:**
-- Produces: tables `public.users`, `public.places`, `public.cards` as in the design; function `ensure_place(p_kind text, p_name text, p_region text, p_lat double precision, p_lng double precision, p_radius_m integer, p_provider_ref text) returns uuid`; buckets `originals`, `renditions`, `cards`; setting `app.allow_publish` that the guard trigger honours (step 5 sets it inside its numbering function); `npm run supabase:env` writing `apps/web/.env.local`.
+- Produces: tables `public.users`, `public.places`, `public.cards` as in the design; function `ensure_place(p_kind text, p_name text, p_region text, p_lat double precision, p_lng double precision, p_radius_m integer, p_provider_ref text) returns uuid`; buckets `originals`, `renditions`, `cards`; a guard trigger that, for the authenticated and anon roles, clears the publication fields on insert and keeps them on update (a security-definer function owned by postgres, step 5's numbering, can publish); `npm run supabase:env` writing `apps/web/.env.local`.
 
 - [ ] **Step 1: Install the CLI as a dev dependency and initialise the project**
 

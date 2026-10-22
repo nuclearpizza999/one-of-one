@@ -63,15 +63,23 @@ create table public.cards (
 );
 create index cards_user_created on public.cards (user_id, created_at desc);
 
--- Nothing a client sends can number or publish a card. Step 5 sets app.allow_publish inside its numbering function.
+-- Clients (the authenticated and anon roles) can neither set nor change publication fields.
+-- A security-definer function owned by postgres (step 5's numbering) runs as its owner and can.
 create or replace function public.guard_card_publication() returns trigger
 language plpgsql as $$
 begin
-  if current_setting('app.allow_publish', true) is distinct from 'on' then
-    new.number := null;
-    new.is_public := false;
-    new.published_at := null;
-    new.share_token := null;
+  if current_user in ('authenticated', 'anon') then
+    if tg_op = 'INSERT' then
+      new.number := null;
+      new.is_public := false;
+      new.published_at := null;
+      new.share_token := null;
+    else
+      new.number := old.number;
+      new.is_public := old.is_public;
+      new.published_at := old.published_at;
+      new.share_token := old.share_token;
+    end if;
   end if;
   return new;
 end $$;
@@ -87,11 +95,12 @@ create or replace function public.ensure_place(
 language sql security definer set search_path = public as $$
   insert into public.places (kind, name, region, lat, lng, radius_m, provider_ref)
   values (p_kind, p_name, p_region, p_lat, p_lng, p_radius_m, p_provider_ref)
-  on conflict (provider_ref) do update set name = excluded.name, region = excluded.region
+  on conflict (provider_ref) do update set provider_ref = excluded.provider_ref
   returning id;
 $$;
 revoke all on function public.ensure_place(text, text, text, double precision, double precision, integer, text) from public;
 grant execute on function public.ensure_place(text, text, text, double precision, double precision, integer, text) to authenticated;
+revoke execute on function public.ensure_place(text, text, text, double precision, double precision, integer, text) from anon;
 
 -- Row-level security: owners only.
 alter table public.users enable row level security;
