@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("the Golden Gate Bridge resolves to the landmark", async ({ request }) => {
-  const r = await request.get("/api/place?lat=37.8199&lng=-122.4783");
+  const r = await request.post("/api/place", { data: { lat: 37.8199, lng: -122.4783 } });
   expect(r.status()).toBe(200);
   expect(r.headers()["cache-control"]).toBe("no-store");
   const { match } = await r.json();
@@ -9,24 +9,46 @@ test("the Golden Gate Bridge resolves to the landmark", async ({ request }) => {
 });
 
 test("a street in Hongdae resolves to Seoul", async ({ request }) => {
-  const r = await request.get("/api/place?lat=37.5563&lng=126.9236");
+  const r = await request.post("/api/place", { data: { lat: 37.5563, lng: 126.9236 } });
   expect(r.status()).toBe(200);
+  expect(r.headers()["cache-control"]).toBe("no-store");
   const { match } = await r.json();
   expect(match).toMatchObject({ kind: "city", label: "Seoul, South Korea" });
 });
 
 test("the middle of the Pacific resolves to nothing", async ({ request }) => {
-  const r = await request.get("/api/place?lat=0&lng=-140");
+  const r = await request.post("/api/place", { data: { lat: 0, lng: -140 } });
   expect(r.status()).toBe(200);
+  expect(r.headers()["cache-control"]).toBe("no-store");
   expect(await r.json()).toEqual({ match: null });
 });
 
-for (const query of ["lat=abc&lng=0", "lat=91&lng=0", "lat=0&lng=181", "lat=0", "", "lat=&lng=0"]) {
-  test(`rejects "${query}" with 400`, async ({ request }) => {
-    const r = await request.get(`/api/place?${query}`);
+const badBodies: unknown[] = [
+  { lat: "abc", lng: 0 },
+  { lat: 91, lng: 0 },
+  { lat: 0, lng: 181 },
+  { lat: 0 },
+  {},
+  { lat: null, lng: 0 },
+  { lat: "37.8", lng: 0 },
+];
+for (const data of badBodies) {
+  test(`rejects ${JSON.stringify(data)} with 400`, async ({ request }) => {
+    const r = await request.post("/api/place", { data });
     expect(r.status()).toBe(400);
     const body = await r.json();
     expect(typeof body.error).toBe("string");
     expect(r.headers()["cache-control"]).toBe("no-store");
   });
 }
+
+test("rejects a body that is not JSON with 400", async ({ request }) => {
+  const r = await request.post("/api/place", { headers: { "content-type": "application/json" }, data: "not json" });
+  expect(r.status()).toBe(400);
+  expect(r.headers()["cache-control"]).toBe("no-store");
+});
+
+test("a GET is not allowed", async ({ request }) => {
+  const r = await request.get("/api/place?lat=1&lng=2");
+  expect(r.status()).toBe(405);
+});

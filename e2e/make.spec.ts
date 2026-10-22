@@ -157,3 +157,15 @@ test("says so when the place lookup fails, and keeps the coordinates", async ({ 
   await expect(page.locator(".oo-line-coords")).toHaveText("37.5563° N, 126.9236° E");
   await expect(page.locator(".oo-line-date")).toHaveText("July 1st, 2026");
 });
+
+test("says so when the lookup answers with an error", async ({ page }) => {
+  await page.route("**/api/place**", (route) =>
+    route.fulfill({ status: 500, contentType: "application/json", body: "{}" }),
+  );
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.getByRole("status")).toHaveText("Couldn't look up the place. Tap the top line to type it.");
+  await expect(page.locator(".oo-line-place")).toHaveText("");
+  await expect(page.locator(".oo-line-coords")).toHaveText("37.5563° N, 126.9236° E");
+  await expect(page.locator(".oo-line-date")).toHaveText("July 1st, 2026");
+});

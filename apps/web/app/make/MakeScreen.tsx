@@ -45,7 +45,12 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 /** Asks our own route for the place. Throws on any failure so the caller can say so. */
 async function lookupPlace(lat: number, lng: number): Promise<PlaceMatch | null> {
-  const res = await fetch(`/api/place?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+  const res = await fetch("/api/place", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ lat, lng }),
+    signal: AbortSignal.timeout(8000),
+  });
   if (!res.ok) throw new Error(`place lookup failed: ${res.status}`);
   const body = (await res.json()) as { match: PlaceMatch | null };
   return body.match;
