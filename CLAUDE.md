@@ -19,6 +19,7 @@ npm test                                 Vitest unit tests in every workspace
 npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
 npm test -w packages/places -- resolve   one places test file
 npm run test:e2e                         Playwright; starts the dev server itself
+                                         (needs the local Supabase stack: `npm run supabase:start` once, then `npm run supabase:env`)
                                          (reusing a running dev server? start it with DEV_PHOTOS_DIR=apps/web/public/dev, or stop it first)
 npx playwright test -g "landscape"       one e2e case by title
 npm run lint                             ESLint (Next config) in apps/web
@@ -39,8 +40,9 @@ npm run supabase:test                    pgTAP tests in supabase/tests against t
 - `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place`, with the coordinates in a JSON body, so they never enter a URL, an access log, or any server but ours.
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
 - `supabase/` holds the schema (`migrations/`), the local stack's settings and the sign-in email template; `supabase test db` runs the pgTAP files in `supabase/tests/`.
+- `apps/web/proxy.ts` is the sign-in wall; `apps/web/lib/supabase/` holds the browser and server clients and the public-path rule; `lib/save.ts` is the one place a card is written; `lib/print.ts` is the one print path (Make and the opened card).
 - Development-only surfaces, absent from production builds: the variation panel under the card on Make (switch intro, texture, tone, tier, motion, border on print), `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
-- Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata) and 2 (variation) are done. Next is step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
+- Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata), 2 (variation) and 4 (accounts and the board) are done. Next is step 5 (Add to board sheet and numbering). Decisions and plans so far are under `docs/superpowers/`.
 
 ## Reference material
 

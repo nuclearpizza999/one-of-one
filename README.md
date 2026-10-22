@@ -20,6 +20,8 @@ screens/                  fourteen HTML mockups, light and dark; open in a brows
 ```
 npm install
 npx playwright install chromium
+# install Docker, then start the local Supabase stack and write apps/web/.env.local
+npm run supabase:start && npm run supabase:env
 npm run dev            # http://localhost:3000
 npm test               # unit tests
 npm run test:e2e       # browser tests

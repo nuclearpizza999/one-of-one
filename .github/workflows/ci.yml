@@ -19,6 +19,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx supabase start -x studio,imgproxy,logflare,vector,realtime,edge-runtime
+      - run: node scripts/supabase-env.mjs
+      - run: npx supabase test db
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
