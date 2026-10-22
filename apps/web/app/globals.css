@@ -169,3 +169,54 @@ button:disabled {
   align-items: center;
   justify-content: center;
 }
+
+/* Sign-in: a field (48px, 1px rule, chrome type) and the primary button. Two design-system tokens, used only here so far. */
+.signin {
+  padding: 36px 20px 0;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.field input {
+  box-sizing: border-box;
+  height: 48px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 16px; /* under 16px, iOS zooms the page on focus */
+  color: var(--ink);
+  background: var(--ground);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+}
+.field input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.button-primary {
+  height: 52px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ground);
+  background: var(--ink);
+}
+.button-primary:disabled {
+  opacity: 0.5;
+}
+.button-primary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}

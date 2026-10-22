@@ -13,12 +13,15 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
     {
       name: "chromium",
+      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1200, height: 1700 },
         deviceScaleFactor: 1,
+        storageState: "e2e/.auth/user.json",
       },
     },
   ],
