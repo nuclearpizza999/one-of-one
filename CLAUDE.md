@@ -14,6 +14,7 @@ npm workspaces on Node 24. Install once with `npm install` and `npx playwright i
 
 ```
 npm run dev                              Next dev server at http://localhost:3000 (apps/web)
+                                         on a phone on the same Wi-Fi: http://<this Mac's LAN IP>:3000 (next.config allows private-range origins in dev)
 npm test                                 Vitest unit tests in every workspace
 npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
 npm test -w packages/places -- resolve   one places test file
