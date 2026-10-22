@@ -70,6 +70,12 @@ describe("layoutCard caption lines", () => {
     expect(l.lines[1]!.baselineY).toBeCloseTo(firstBaseline + lineHeight, 6);
   });
 
+  it("puts the number where the first line would be when there are no lines", () => {
+    const l = layoutCard({ photoW: 900, photoH: 1200, place: "", date: "", coords: "", number: 3 });
+    expect(l.lines).toEqual([]);
+    expect(l.number!.baselineY).toBeCloseTo(firstBaseline, 6);
+  });
+
   it("treats whitespace-only text as empty", () => {
     const l = layoutCard({ photoW: 900, photoH: 1200, ...full, place: "   " });
     expect(l.lines.map((x) => x.kind)).toEqual(["date", "coords"]);

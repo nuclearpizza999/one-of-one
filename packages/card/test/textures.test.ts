@@ -14,7 +14,7 @@ function draw(seed = 12345): BorderDraw {
     palette: { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] },
     tier: TIERS.fine,
     width: 100,
-    height: 144.2,
+    height: 141,
     photo: { ...PHOTO },
   };
 }
@@ -61,7 +61,7 @@ describe("grainFilter", () => {
     // #b08860 is rgb(176, 136, 96): 0.690, 0.533, 0.376 as fractions.
     expect(g.def).toContain('values="0 0 0 0 0.690 0 0 0 0 0.533 0 0 0 0 0.376 0 0 0 0.09 0"');
     expect(g.use).toContain('filter="url(#g)"');
-    expect(g.use).toContain('width="100" height="144.2"');
+    expect(g.use).toContain('width="100" height="141"');
   });
 });
 
@@ -72,7 +72,7 @@ describe("mottleFilter", () => {
     expect(m.def).toMatch(/baseFrequency="0\.\d+"/);
     expect(m.def).toContain('values="0 0 0 0 0.690 0 0 0 0 0.533 0 0 0 0 0.376 0 0 0 0.1 0"');
     expect(m.use).toContain('filter="url(#m)"');
-    expect(m.use).toContain('width="100" height="144.2"');
+    expect(m.use).toContain('width="100" height="141"');
   });
 });
 
@@ -114,7 +114,7 @@ describe("foilFill", () => {
     expect(f.def).toContain('stop-color="#f3d9a4"');
     expect(f.def).toContain('stop-color="#b8864a"');
     expect(f.def).toMatch(/rotate\(\d+ 0\.5 0\.5\)/);
-    expect(f.use).toBe('<rect x="0" y="0" width="100" height="144.2" fill="url(#foil)"/>');
+    expect(f.use).toBe('<rect x="0" y="0" width="100" height="141" fill="url(#foil)"/>');
     expect(foilFill("foil", draw(321))).toEqual(f);
   });
 });

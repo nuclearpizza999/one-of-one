@@ -20,11 +20,10 @@ export const CARD = {
   weightCoords: 400,
   /**
    * Distance from the bottom of a line box to its baseline, as a fraction
-   * of font size, for EB Garamond at line-height 1.2. Measured by the
-   * equivalence test's probe (e2e/equivalence.spec.ts) and frozen here; provisional until
-   * Task 2 of docs/superpowers/plans/2026-10-22-caption-under-photo.md records the measurement.
+   * of font size. Measured by the equivalence test's probe on 2026-10-22
+   * (DOM probe: 0.2667) for EB Garamond at line-height 1.2, and frozen here.
    */
-  baselineFromBottom: 0.32,
+  baselineFromBottom: 0.27,
 } as const;
 
 export interface CardSpec {

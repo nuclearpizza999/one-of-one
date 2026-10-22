@@ -45,7 +45,7 @@ test("makes a card from a photo, edits the caption and saves the PNG", async ({ 
   expect(dl.suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
   const png = PNG.sync.read(readFileSync((await dl.path())!));
   expect(png.width).toBe(1000);
-  expect(png.height).toBe(1442);
+  expect(png.height).toBe(1410);
   await expect(page.getByRole("status")).toContainText("Print saved.");
 });
 
@@ -120,7 +120,7 @@ test("reads the place, date and coordinates from a photo with EXIF", async ({ pa
   expect(dl.suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
   const png = PNG.sync.read(readFileSync((await dl.path())!));
   expect(png.width).toBe(1000);
-  expect(png.height).toBe(1442);
+  expect(png.height).toBe(1410);
 });
 
 test("leaves the place blank with a hint when the photo has a date but no GPS", async ({ page }) => {
@@ -145,7 +145,7 @@ test("shows a sideways-stored camera photo upright in both painters", async ({ p
   await page.getByRole("button", { name: "Print" }).click();
   const png = PNG.sync.read(readFileSync((await (await download).path())!));
   expect(png.width).toBe(1000);
-  expect(png.height).toBe(1442);
+  expect(png.height).toBe(1410);
 });
 
 test("says so when the place lookup fails, and keeps the coordinates", async ({ page }) => {

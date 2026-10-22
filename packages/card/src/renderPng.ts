@@ -19,9 +19,9 @@ export function printDimensions(naturalW: number, naturalH: number, cap = PRINT_
   const photoW = Math.min(naturalW, cap);
   const scale = photoW / naturalW;
   const photoH = Math.round(naturalH * scale);
-  const W = Math.round(photoW / 0.9);
+  const W = Math.round(photoW / (CARD.photoWidth / CARD.width));
   const u = W / 100;
-  const H = Math.round(5 * u + photoH + 16 * u);
+  const H = Math.round(CARD.mat * u + photoH + CARD.stripHeight * u);
   return { photoW, photoH, scale, W, H, u };
 }
 
