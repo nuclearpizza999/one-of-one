@@ -72,6 +72,7 @@ export function MakeScreen() {
   const captionRef = useRef({ place: "", date: "", coords: "" });
   // The resolved place for step 5's numbering; not shown on the card.
   const placeMatchRef = useRef<PlaceMatch | null>(null);
+  const pickSeq = useRef(0);
 
   // Release the previous photo's object URL when it is replaced or the screen unmounts.
   useEffect(() => {
@@ -80,16 +81,30 @@ export function MakeScreen() {
     };
   }, [photo]);
 
+  // The one place the caption is written: the ref (read by print) and the state (read by the card).
+  function setCaption(next: { place: string; date: string; coords: string }) {
+    captionRef.current = next;
+    setPlace(next.place);
+    setDate(next.date);
+    setCoords(next.coords);
+  }
+
   async function onFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const seq = ++pickSeq.current;
     setStatus("Reading the photo…");
     const src = URL.createObjectURL(file);
     const [img, meta] = await Promise.all([
       loadImage(src).catch(() => null),
       readPhotoMetadata(file, file.lastModified),
     ]);
+    // A newer pick has superseded this one; drop its result so it cannot overwrite the newer photo.
+    if (seq !== pickSeq.current) {
+      URL.revokeObjectURL(src);
+      return;
+    }
     if (!img || img.naturalWidth === 0 || img.naturalHeight === 0) {
       URL.revokeObjectURL(src);
       setStatus("This photo format can't be shown here. Try a JPEG or PNG.");
@@ -106,27 +121,26 @@ export function MakeScreen() {
       }
     }
 
+    if (seq !== pickSeq.current) {
+      URL.revokeObjectURL(src);
+      return;
+    }
+
     const caption = {
       place: match?.label ?? "",
       date: meta.takenAt ? fmtDate(meta.takenAt) : "",
       coords: meta.gps ? fmtCoords(meta.gps.lat, meta.gps.lng) : "",
     };
-    captionRef.current = caption;
     placeMatchRef.current = match;
     setPhoto({ file, src, width: img.naturalWidth, height: img.naturalHeight, element: img });
-    setPlace(caption.place);
-    setDate(caption.date);
-    setCoords(caption.coords);
+    setCaption(caption);
     setIntro(assignIntro(seedFromPhoto(file.size, img.naturalWidth, img.naturalHeight)).id);
     setReplayKey((k) => k + 1);
     setStatus(statusFor({ gps: meta.gps !== null, dateSource: meta.dateSource, match: match?.kind ?? null, lookupFailed }));
   }
 
   function onCaptionChange(field: LineKind, text: string) {
-    captionRef.current = { ...captionRef.current, [field]: text };
-    if (field === "place") setPlace(text);
-    else if (field === "date") setDate(text);
-    else setCoords(text);
+    setCaption({ ...captionRef.current, [field]: text });
   }
 
   async function onPrint() {

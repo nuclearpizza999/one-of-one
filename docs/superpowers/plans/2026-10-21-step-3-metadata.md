@@ -39,7 +39,7 @@ packages/places/src/index.ts               re-exports
 packages/places/test/data.test.ts, geo.test.ts, resolve.test.ts
 e2e/fixtures/make-exif-fixtures.mjs        writes seoul.jpg, nogps.jpg, rotated.jpg with piexifjs
 apps/web/public/dev/{seoul,nogps,rotated}.jpg
-apps/web/vitest.config.ts                  Vitest for apps/web/lib
+apps/web/vitest.config.mts                  Vitest for apps/web/lib
 apps/web/lib/exif.ts + exif.test.ts        readPhotoMetadata
 apps/web/lib/status.ts + status.test.ts    statusFor (the status sentence)
 apps/web/app/api/place/route.ts            GET /api/place
@@ -577,7 +577,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Files:**
 - Create: `e2e/fixtures/make-exif-fixtures.mjs`, `apps/web/public/dev/seoul.jpg`, `apps/web/public/dev/nogps.jpg`, `apps/web/public/dev/rotated.jpg` (generated, committed)
 - Modify: `package.json` (root: `piexifjs` devDependency, `fixtures` script), `apps/web/package.json` (`exifr` dependency, `vitest` devDependency, `test` script)
-- Create: `apps/web/vitest.config.ts`, `apps/web/lib/exif.ts`
+- Create: `apps/web/vitest.config.mts`, `apps/web/lib/exif.ts`
 - Test: `apps/web/lib/exif.test.ts`
 
 **Interfaces:**
@@ -599,7 +599,7 @@ In the root `package.json`, add `"piexifjs": "^1.0.6"` to `devDependencies` and 
 
 In `apps/web/package.json`, add `"exifr": "^7.1.3"` to `dependencies`, `"vitest": "^5.0.5"` to `devDependencies`, and the script `"test": "vitest run"`.
 
-`apps/web/vitest.config.ts`:
+`apps/web/vitest.config.mts`:
 
 ```ts
 import { defineConfig } from "vitest/config";
@@ -827,7 +827,7 @@ Expected: exit 0.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add package.json package-lock.json apps/web/package.json apps/web/vitest.config.ts apps/web/lib/exif.ts apps/web/lib/exif.test.ts e2e/fixtures/make-exif-fixtures.mjs apps/web/public/dev/seoul.jpg apps/web/public/dev/nogps.jpg apps/web/public/dev/rotated.jpg
+git add package.json package-lock.json apps/web/package.json apps/web/vitest.config.mts apps/web/lib/exif.ts apps/web/lib/exif.test.ts e2e/fixtures/make-exif-fixtures.mjs apps/web/public/dev/seoul.jpg apps/web/public/dev/nogps.jpg apps/web/public/dev/rotated.jpg
 git commit -m "Add EXIF reading with exifr and three EXIF-bearing JPEG fixtures
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"

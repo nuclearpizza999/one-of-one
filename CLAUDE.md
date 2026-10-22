@@ -20,7 +20,7 @@ npm test -w packages/places -- resolve   one places test file
 npm run test:e2e                         Playwright; starts the dev server itself
 npx playwright test -g "landscape"       one e2e case by title
 npm run lint                             ESLint (Next config) in apps/web
-npm run typecheck                        tsc for e2e, packages/card and apps/web
+npm run typecheck                        tsc for e2e, packages/card, packages/places and apps/web
 npm run fixtures                         regenerate apps/web/public/dev/* (PNG fixtures, then EXIF JPEG fixtures)
 ```
 
@@ -29,7 +29,7 @@ npm run fixtures                         regenerate apps/web/public/dev/* (PNG f
 ## Where things are
 
 - `packages/card` is the renderer, with no app imports. `layout.ts` is the single source of card geometry; `Card.tsx` paints it in DOM and `renderPng.ts` paints it on canvas. Fonts ship in `fonts/` and are declared in `src/card.css`.
-- `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `GET /api/place`, so EXIF coordinates never leave our server.
+- `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place` (a JSON body, so coordinates never enter a URL or an access log), so EXIF coordinates never leave our server.
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
 - Build order from SPEC.md: step 1 (renderer and shell) and step 3 (metadata) are done. Next is step 2 (variation), then step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
 
@@ -72,6 +72,6 @@ Next.js app, Postgres with PostGIS, object storage for photos, `exifr` for EXIF 
 - Keep the card renderer as a standalone package with no app imports, so the Make screen, the PNG export and any future server painter share one code path.
 - Fonts: EB Garamond 600 for the card caption only (400 for the coordinates line); Archivo 500 for app chrome.
 - Light and dark themes change the wall and chrome only; the card is identical in both.
-- An EXIF date is wall-clock at capture with no zone. exifr builds the `Date` from its components in the device's zone and `fmtDate` reads local getters, so the card shows the date the camera recorded. Never convert to UTC.
+- An EXIF date is wall-clock at capture with no zone. exifr builds the `Date` from its components in the device's zone and `fmtDate` reads local getters, so the card shows the date the camera recorded. Never convert to UTC. When a capture date is persisted (step 4), store the wall-clock as a zone-less string or the caption text, never `toISOString()`, which would shift the day across UTC.
 - Precision is stored as `city` or `neighborhood` (data model) and shown as City or Area (chrome). Keep each vocabulary on its own side.
 - Prefer a short status line in plain words over modal errors when metadata is missing.

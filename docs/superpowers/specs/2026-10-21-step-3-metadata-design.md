@@ -5,7 +5,7 @@ Oct 21, 2026. Design for build step 3 from SPEC.md: EXIF read, place resolution,
 ## Decisions taken
 
 - **Offline tiers now, API tiers stubbed.** Landmark, city and no-match ship from the prototype's data (28 landmarks, 10,379 cities). Venue and neighborhood get a provider interface and a stub that answers null; wiring Mapbox or Google later is one implementation plus a key. Venues are first needed for directions in step 6.
-- **The lookup runs on the server.** The phone sends lat and lng to our own `GET /api/place` route, which holds the data and answers with the match. The client bundle stays small, EXIF coordinates go to no third party, and the provider call will live where its key can stay secret.
+- **The lookup runs on the server.** The phone sends lat and lng to our own `POST /api/place` route, which holds the data and answers with the match. The client bundle stays small, EXIF coordinates go to no third party, and the provider call will live where its key can stay secret.
 - **Timezone rule.** An EXIF date is the wall-clock time where the photo was taken and carries no zone. exifr builds a `Date` from those components in the device's zone, and `fmtDate` reads it with local getters, so the card shows the capture date as the camera recorded it. Never convert to UTC. Goes into CLAUDE.md's conventions.
 
 ## Package `packages/places`
@@ -27,7 +27,7 @@ export interface PlaceMatch {
   name: string;        // "Golden Gate Bridge", "Seoul"
   region: string;      // "San Francisco", "South Korea"
   label: string;       // caption place line: `${name}, ${region}`
-  key: string;         // stable id for step 5's numbering: `${kind}:${name}, ${region}`
+  key: string;         // stable id for numbering: `${kind}:${label}@${lat},${lng}` (104 city names repeat for distinct places)
   lat: number; lng: number;   // the place's own coordinates, not the photo's
   distanceM: number;   // photo to place
 }
@@ -35,7 +35,7 @@ export interface PlaceProvider {
   venueNear(lat: number, lng: number, radiusM: number): Promise<PlaceMatch | null>;
   neighborhoodAt(lat: number, lng: number): Promise<PlaceMatch | null>;
 }
-export const noProvider: PlaceProvider;   // both answer null
+export const noProvider: PlaceProvider;   // both answer null. A rejecting provider counts as no match.
 export function distanceM(aLat, aLng, bLat, bLng): number;   // haversine, metres
 export async function resolvePlace(lat: number, lng: number, provider = noProvider): Promise<PlaceMatch | null>;
 ```
@@ -55,13 +55,13 @@ export interface PhotoMetadata {
 export async function readPhotoMetadata(file: File | Blob, fileLastModified?: number): Promise<PhotoMetadata>;
 ```
 
-Uses exifr 7.1.3: `DateTimeOriginal`, falling back to `CreateDate`, then the file's modification time (`dateSource: "file"`), else null (`"none"`). GPS from `exifr.gps`, kept only when both numbers are finite. Never throws: any parse failure yields nulls. Unit tested in Node against the fixtures below.
+Uses exifr 7.1.3: `DateTimeOriginal`, falling back to `CreateDate`, then the file's modification time (`dateSource: "file"`), else null (`"none"`). An EXIF date is used only if it is plausible (1970 to a day from now); unset camera clocks write 0000:00:00, which would otherwise print as 1899. GPS from `exifr.gps`, kept only when both numbers are finite. Never throws: any parse failure yields nulls. Unit tested in Node against the fixtures below.
 
 Orientation: camera JPEGs often store portrait shots sideways with an EXIF Orientation tag. Browsers apply it by default to both the image element and canvas drawing, so both painters see the upright dimensions; the rotated fixture below keeps that verified. Nothing in the code reads the tag.
 
-## The lookup route: `GET /api/place?lat=<n>&lng=<n>`
+## The lookup route: `POST /api/place`
 
-A Next route handler in `apps/web/app/api/place/route.ts`. Validates that both are finite numbers within range (lat −90..90, lng −180..180); 400 with `{ error }` otherwise. Calls `resolvePlace(lat, lng, noProvider)` and returns `{ match: PlaceMatch | null }`. Stores nothing, logs nothing. `Cache-Control: no-store`.
+A Next route handler in `apps/web/app/api/place/route.ts`, taking a JSON body `{ lat, lng }`. Validates that both are finite numbers within range (lat −90..90, lng −180..180); 400 with `{ error }` otherwise. Calls `resolvePlace(lat, lng, noProvider)` and returns `{ match: PlaceMatch | null }`. Stores nothing, logs nothing. `Cache-Control: no-store`. A JSON body rather than a query string, so coordinates never appear in a URL or an access log.
 
 ## Make screen behavior
 
