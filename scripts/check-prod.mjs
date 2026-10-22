@@ -37,6 +37,7 @@ for (const f of built) {
 }
 
 let server;
+let stopping = false;
 try {
   let inUse = false;
   try {
@@ -52,7 +53,7 @@ try {
   server = spawn("npm", ["run", "start", "-w", "apps/web", "--", "--port", String(port)], { stdio: "ignore", detached: true });
   const exited = new Promise((resolve) => {
     server.on("exit", (code) => {
-      failures.push(`production server exited early (code ${code})`);
+      if (!stopping) failures.push(`production server exited early (code ${code})`);
       resolve();
     });
   });
@@ -78,6 +79,7 @@ try {
   failures.push(String(e.message ?? e));
 } finally {
   if (server) {
+    stopping = true;
     try {
       process.kill(-server.pid, "SIGTERM");
     } catch {

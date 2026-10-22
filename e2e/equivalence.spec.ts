@@ -124,4 +124,6 @@ test("the print's photo region is the source photo, pixel for pixel", async ({ p
   console.log(`photo region: ${differing} differing pixels`);
   if (differing > 0) writeFileSync(test.info().outputPath("photo-region-diff.png"), PNG.sync.write(diff));
   expect(differing).toBe(0);
+  // pixelmatch may dismiss edge pixels as anti-aliasing; the bytes themselves must match.
+  expect(region.data.equals(source.data)).toBe(true);
 });

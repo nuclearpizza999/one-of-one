@@ -28,9 +28,13 @@ export function VariationGallery() {
       const res = await fetch("/api/dev/photos");
       const { photos } = (await res.json()) as { photos: string[] };
       for (const name of photos) {
-        const blob = await (await fetch(`/api/dev/photos/${encodeURIComponent(name)}`)).blob();
-        const described = await describePhoto(new File([blob], name, { type: "image/jpeg" }));
-        if (!cancelled && described) setEntries((prev) => [...prev, { name, photo: described }]);
+        try {
+          const blob = await (await fetch(`/api/dev/photos/${encodeURIComponent(name)}`)).blob();
+          const described = await describePhoto(new File([blob], name, { type: "image/jpeg" }));
+          if (!cancelled && described) setEntries((prev) => [...prev, { name, photo: described }]);
+        } catch {
+          // One unreadable photo must not hide the rest of the folder.
+        }
       }
       if (!cancelled) setLoaded(true);
     })().catch(() => {
