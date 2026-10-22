@@ -98,3 +98,8 @@ export function layoutCard(spec: CardSpec): CardLayout {
       spec.number === null ? null : { text: `#${spec.number}`, baselineY: lastBaseline },
   };
 }
+
+/** Card height in units for a photo of this aspect ratio: mat + photo + caption strip. */
+export function cardHeightUnits(photoW: number, photoH: number): number {
+  return CARD.mat + (CARD.photoWidth * photoH) / photoW + CARD.stripHeight;
+}

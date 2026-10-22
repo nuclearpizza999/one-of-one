@@ -1,10 +1,12 @@
 "use client";
 
-import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent, ReactNode } from "react";
+import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent } from "react";
 import type { IntroId } from "./intros";
 import { CARD_FONT_FAMILY } from "./fonts";
-import { CARD } from "./layout";
+import { BAND_UNITS, borderDataUrl } from "./border";
+import { CARD, cardHeightUnits } from "./layout";
 import type { LineKind } from "./layout";
+import { MOTIONS, type Variation } from "./variation";
 
 export interface CardPhoto {
   src: string;
@@ -30,8 +32,8 @@ export interface CardProps {
   replayKey?: number;
   /** light: hairline and shadow around the card. dark: nothing. The card itself never changes. */
   wall?: "light" | "dark";
-  /** Reserved for the step 2 border variation layer. */
-  border?: ReactNode;
+  /** The derived border variation; null or absent draws the plain white mat. Never user-chosen. */
+  variation?: Variation | null;
   /** Tap or Enter on the empty mat. */
   onPick?: () => void;
   id?: string;
@@ -58,6 +60,7 @@ const FRAME_VARS = {
   "--oo-fs": `${CARD.fontSize}cqw`,
   "--oo-lh": `${CARD.lineHeight}`,
   "--oo-place-max": `${CARD.photoWidth * CARD.placeMaxWidthRatio}cqw`,
+  "--oo-band": `${BAND_UNITS}cqw`,
   "--oo-font": CARD_FONT_FAMILY,
   "--oo-ink": CARD.ink,
   "--oo-ink-coords": CARD.inkCoords,
@@ -80,13 +83,14 @@ export function Card({
   intro = null,
   replayKey = 0,
   wall = "light",
-  border,
+  variation = null,
   onPick,
   id,
 }: CardProps) {
   const empty = photo === null;
   const pickable = empty && onPick !== undefined;
-  const frameClass = intro ? `oo-frame oo-intro-${intro}` : "oo-frame";
+  const motionClass = variation ? MOTIONS[variation.motion].className : null;
+  const frameClass = ["oo-frame", intro ? `oo-intro-${intro}` : null, motionClass].filter(Boolean).join(" ");
 
   const allLines: Array<{ kind: LineKind; text: string }> = [
     { kind: "place", text: place },
@@ -123,13 +127,26 @@ export function Card({
         data-wall={wall}
         data-empty={empty ? "true" : "false"}
         data-editable={editable ? "true" : "false"}
+        data-texture={variation?.texture}
+        data-tone={variation?.tone}
+        data-tier={variation?.tier}
+        data-motion={variation?.motion}
         role={pickable ? "button" : undefined}
         tabIndex={pickable ? 0 : undefined}
         aria-label={pickable ? "Add a photo" : undefined}
         onClick={pickable ? onPickClick : undefined}
         onKeyDown={pickable ? onPickKey : undefined}
       >
-        {border ? <div className="oo-border">{border}</div> : null}
+        {variation && photo ? (
+          <div className="oo-border">
+            <img
+              className="oo-border-img"
+              src={borderDataUrl(variation, cardHeightUnits(photo.width, photo.height))}
+              alt=""
+              draggable={false}
+            />
+          </div>
+        ) : null}
         <div className="oo-photo-wrap">
           {photo ? (
             <img

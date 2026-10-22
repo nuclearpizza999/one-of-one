@@ -9,6 +9,15 @@ const caption = {
   number: 3 as number | null,
 };
 const photo = { src: "blob:photo", width: 900, height: 1200 };
+const variation = {
+  texture: "grain",
+  tone: "warm",
+  palette: { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] },
+  tier: "fine",
+  motion: "none",
+  intro: "rise",
+  seed: 7,
+} as const;
 
 describe("Card with a photo", () => {
   it("renders the photo whole at its natural dimensions", () => {
@@ -60,15 +69,36 @@ describe("Card with a photo", () => {
     expect(html).toContain('data-wall="light"');
   });
 
-  it("renders the border slot inside the card", () => {
-    const html = renderToStaticMarkup(
-      <Card photo={photo} {...caption} border={<i data-texture="grain" />} />,
-    );
-    expect(html).toContain('<div class="oo-border"><i data-texture="grain"></i></div>');
+  it("draws the border image under the photo when a variation is given", () => {
+    const html = renderToStaticMarkup(<Card photo={photo} {...caption} variation={variation} />);
+    expect(html).toContain('<div class="oo-border"><img class="oo-border-img" src="data:image/svg+xml;charset=utf-8,');
+    expect(html.indexOf('class="oo-border"')).toBeLessThan(html.indexOf('class="oo-photo-wrap"'));
+    expect(html).toContain('data-texture="grain"');
+    expect(html).toContain('data-tone="warm"');
+    expect(html).toContain('data-tier="fine"');
+    expect(html).toContain('data-motion="none"');
+    expect(html).toContain("--oo-band:2cqw");
+  });
+
+  it("omits the border without a variation", () => {
+    const html = renderToStaticMarkup(<Card photo={photo} {...caption} />);
+    expect(html).not.toContain("oo-border");
+    expect(html).not.toContain("data-texture");
+  });
+
+  it("adds the motion class on the frame for a sheen", () => {
+    const sheen = { ...variation, motion: "sheen" } as const;
+    expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={sheen} />)).toContain('class="oo-frame oo-motion-sheen"');
+    expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={sheen} intro="flip" />)).toContain('class="oo-frame oo-intro-flip oo-motion-sheen"');
   });
 });
 
 describe("Card empty state", () => {
+  it("draws no border on the empty mat even with a variation", () => {
+    const html = renderToStaticMarkup(<Card photo={null} place="" date="" coords="" number={null} variation={variation} />);
+    expect(html).not.toContain("oo-border");
+  });
+
   it("is a button labelled Add a photo", () => {
     const html = renderToStaticMarkup(<Card photo={null} place="" date="" coords="" number={null} onPick={() => {}} />);
     expect(html).toContain('data-empty="true"');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD, layoutCard } from "../src/layout";
+import { CARD, cardHeightUnits, layoutCard } from "../src/layout";
 
 const full = {
   place: "Seoul, South Korea",
@@ -34,6 +34,11 @@ describe("layoutCard geometry", () => {
     expect(l.text).toMatchObject({ left: 8, right: 92, fontSize: 3.4 });
     expect(l.text.lineHeight).toBeCloseTo(3.4 * 1.32, 6);
     expect(l.text.placeMaxWidth).toBeCloseTo(64.8, 6);
+  });
+  it("gives the card height in units for a photo's aspect", () => {
+    expect(cardHeightUnits(900, 1200)).toBeCloseTo(144.2, 6);
+    expect(cardHeightUnits(900, 1200)).toBeCloseTo(layoutCard({ photoW: 900, photoH: 1200, ...full }).height, 6);
+    expect(cardHeightUnits(900, 600)).toBeCloseTo(84.2, 6);
   });
 });
 
