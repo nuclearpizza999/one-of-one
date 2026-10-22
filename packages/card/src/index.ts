@@ -35,7 +35,7 @@ export type {
 export { GREY_SATURATION, paletteFromPixels } from "./palette";
 export { TEXTURES, foilBand, grainFilter, wearStrokes } from "./textures";
 export type { BorderDraw, Texture, TextureDef, TextureFragments } from "./textures";
-export { BAND_UNITS, borderDataUrl, borderSvg, mulberry32 } from "./border";
+export { BAND_UNITS, borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "./border";
 export { Card } from "./Card";
 export type { CardPhoto, CardProps } from "./Card";
 export { PRINT_CAP, drawCard, ellipsize, printDimensions, renderPng } from "./renderPng";

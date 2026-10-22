@@ -56,7 +56,12 @@ export function borderSvg(v: Variation, cardHeightUnits: number): string {
   );
 }
 
-/** The document as an image URL for an <img> or a canvas drawImage. */
+/** Any SVG document as an image URL for an <img> or a canvas drawImage. */
+export function svgDataUrl(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/** The border document as an image URL. */
 export function borderDataUrl(v: Variation, cardHeightUnits: number): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(borderSvg(v, cardHeightUnits))}`;
+  return svgDataUrl(borderSvg(v, cardHeightUnits));
 }

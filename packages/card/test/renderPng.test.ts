@@ -82,6 +82,21 @@ describe("drawCard", () => {
     expect(calls[1]).toEqual(["drawImage", image, 50, 50, 900, 1200]);
   });
 
+  it("draws the border over the fill and under the photo when given one", () => {
+    const { ctx, calls } = fakeCtx();
+    const border = { kind: "border" } as unknown as CanvasImageSource;
+    drawCard(ctx, image, dims, spec, border);
+    expect(calls[0]![0]).toBe("fillRect");
+    expect(calls[1]).toEqual(["drawImage", border, 0, 0, 1000, 1442]);
+    expect(calls[2]).toEqual(["drawImage", image, 50, 50, 900, 1200]);
+  });
+
+  it("draws no border by default", () => {
+    const { ctx, calls } = fakeCtx();
+    drawCard(ctx, image, dims, spec);
+    expect(calls.filter((c) => c[0] === "drawImage")).toHaveLength(1);
+  });
+
   it("draws each line at its baseline, bottom-aligned, in the right weight and color", () => {
     const { ctx, calls } = fakeCtx();
     drawCard(ctx, image, dims, spec);
@@ -124,12 +139,15 @@ describe("renderPng", () => {
 
   function fakeCanvasFactory(maxWidth: number) {
     const made: Array<{ w: number; h: number }> = [];
+    const contexts: ReturnType<typeof fakeCtx>[] = [];
     const createCanvas = (w: number, h: number): CanvasTarget => {
       if (w > maxWidth) throw new Error("canvas too large");
       made.push({ w, h });
-      return { width: w, height: h, getContext: () => fakeCtx().ctx };
+      const c = fakeCtx();
+      contexts.push(c);
+      return { width: w, height: h, getContext: () => c.ctx };
     };
-    return { createCanvas, made };
+    return { createCanvas, made, contexts };
   }
   const toBlob = async () => new Blob(["png"], { type: "image/png" });
 
@@ -146,6 +164,44 @@ describe("renderPng", () => {
     const r = await renderPng({ ...spec, image, naturalWidth: 6000, naturalHeight: 4000, createCanvas, toBlob });
     expect(made).toEqual([{ w: 2667, h: 2245 }]);
     expect(r).toMatchObject({ width: 2667, height: 2245, reduced: true });
+  });
+
+  it("loads the border SVG as a data URL and reports it drawn", async () => {
+    const { createCanvas, contexts } = fakeCanvasFactory(10_000);
+    const seen: string[] = [];
+    const borderImage = { kind: "border" } as unknown as CanvasImageSource;
+    const r = await renderPng({
+      ...spec, image, naturalWidth: 900, naturalHeight: 1200, createCanvas, toBlob,
+      border: "<svg/>",
+      loadImage: async (url) => { seen.push(url); return borderImage; },
+    });
+    expect(r.borderDrawn).toBe(true);
+    expect(seen).toEqual(["data:image/svg+xml;charset=utf-8,%3Csvg%2F%3E"]);
+    const draws = contexts[0]!.calls.filter((c) => c[0] === "drawImage");
+    expect(draws).toHaveLength(2);
+    expect(draws[0]![1]).toBe(borderImage);
+  });
+
+  it("prints without the border when its image fails to load", async () => {
+    const { createCanvas, contexts } = fakeCanvasFactory(10_000);
+    const r = await renderPng({
+      ...spec, image, naturalWidth: 900, naturalHeight: 1200, createCanvas, toBlob,
+      border: "<svg/>",
+      loadImage: async () => null,
+    });
+    expect(r.borderDrawn).toBe(false);
+    expect(contexts[0]!.calls.filter((c) => c[0] === "drawImage")).toHaveLength(1);
+  });
+
+  it("never loads an image when no border is requested", async () => {
+    const { createCanvas } = fakeCanvasFactory(10_000);
+    let loads = 0;
+    const r = await renderPng({
+      ...spec, image, naturalWidth: 900, naturalHeight: 1200, createCanvas, toBlob,
+      loadImage: async () => { loads += 1; return null; },
+    });
+    expect(loads).toBe(0);
+    expect(r.borderDrawn).toBe(false);
   });
 
   it("throws when both attempts fail", async () => {

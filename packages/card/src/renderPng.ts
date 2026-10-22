@@ -1,4 +1,5 @@
 import { cardFont, loadCardFonts } from "./fonts";
+import { svgDataUrl } from "./border";
 import { CARD, layoutCard } from "./layout";
 
 /** Photo width cap for the print PNG, in pixels. 300 dpi at 12 inches needs 3600. */
@@ -61,7 +62,13 @@ export interface DrawSpec {
 }
 
 /** Draw the card onto a context whose canvas is dims.W by dims.H. Pure: no fonts loading, no blob. */
-export function drawCard(ctx: Ctx2D, image: CanvasImageSource, dims: PrintDims, spec: DrawSpec): void {
+export function drawCard(
+  ctx: Ctx2D,
+  image: CanvasImageSource,
+  dims: PrintDims,
+  spec: DrawSpec,
+  border: CanvasImageSource | null = null,
+): void {
   const { photoW, photoH, W, H, u } = dims;
   const layout = layoutCard({ photoW, photoH, ...spec });
   const fs = layout.text.fontSize * u;
@@ -70,6 +77,8 @@ export function drawCard(ctx: Ctx2D, image: CanvasImageSource, dims: PrintDims, 
 
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, W, H);
+  // The border sits on the mat, under the photo and the caption, exactly as on screen.
+  if (border) ctx.drawImage(border, 0, 0, W, H);
   ctx.drawImage(image, layout.photo.x * u, layout.photo.y * u, photoW, photoH);
 
   ctx.textBaseline = "alphabetic";
@@ -98,6 +107,10 @@ export interface RenderPngInput extends DrawSpec {
   createCanvas?: (width: number, height: number) => CanvasTarget;
   /** Defaults to HTMLCanvasElement.toBlob as image/png. */
   toBlob?: (canvas: CanvasTarget) => Promise<Blob>;
+  /** The border SVG document from borderSvg(); drawn under the photo. Omit for the plain white mat. */
+  border?: string;
+  /** Loads the border as an image. Defaults to an Image element fed the data URL; resolves null when it fails. */
+  loadImage?: (dataUrl: string) => Promise<CanvasImageSource | null>;
 }
 
 export interface RenderPngResult {
@@ -108,6 +121,8 @@ export interface RenderPngResult {
   fontsLoaded: boolean;
   /** true when the full-size canvas failed and the PNG was drawn at half the cap. */
   reduced: boolean;
+  /** true when a border was requested and its image loaded and was drawn. */
+  borderDrawn: boolean;
 }
 
 function domCanvas(width: number, height: number): CanvasTarget {
@@ -126,12 +141,23 @@ function domToBlob(canvas: CanvasTarget): Promise<Blob> {
   });
 }
 
+function domLoadImage(dataUrl: string): Promise<CanvasImageSource | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
 /** Render the print PNG. Retries once at half the cap if the phone cannot allocate the full canvas. */
 export async function renderPng(input: RenderPngInput): Promise<RenderPngResult> {
   const cap = input.cap ?? PRINT_CAP;
   const createCanvas = input.createCanvas ?? domCanvas;
   const toBlob = input.toBlob ?? domToBlob;
   const fontsLoaded = await loadCardFonts();
+  const loadImage = input.loadImage ?? domLoadImage;
+  const borderImage = input.border ? await loadImage(svgDataUrl(input.border)) : null;
   const fullPhotoW = Math.min(input.naturalWidth, cap);
 
   let lastError: unknown;
@@ -141,7 +167,7 @@ export async function renderPng(input: RenderPngInput): Promise<RenderPngResult>
       const canvas = createCanvas(dims.W, dims.H);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Could not get a 2d context");
-      drawCard(ctx, input.image, dims, input);
+      drawCard(ctx, input.image, dims, input, borderImage);
       const blob = await toBlob(canvas);
       return {
         blob,
@@ -149,6 +175,7 @@ export async function renderPng(input: RenderPngInput): Promise<RenderPngResult>
         height: dims.H,
         fontsLoaded,
         reduced: dims.photoW < fullPhotoW,
+        borderDrawn: borderImage !== null,
       };
     } catch (e) {
       lastError = e;

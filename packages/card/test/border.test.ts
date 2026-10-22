@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAND_UNITS, borderDataUrl, borderSvg, mulberry32 } from "../src/border";
+import { BAND_UNITS, borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "../src/border";
 import { TEXTURES } from "../src/textures";
 import type { Variation } from "../src/variation";
 
@@ -77,5 +77,11 @@ describe("borderDataUrl", () => {
     const url = borderDataUrl(base, H);
     expect(url.startsWith("data:image/svg+xml;charset=utf-8,")).toBe(true);
     expect(decodeURIComponent(url.slice("data:image/svg+xml;charset=utf-8,".length))).toBe(borderSvg(base, H));
+  });
+});
+
+describe("svgDataUrl", () => {
+  it("encodes any SVG string as a data URL", () => {
+    expect(svgDataUrl("<svg a=\"#1\"/>")).toBe("data:image/svg+xml;charset=utf-8,%3Csvg%20a%3D%22%231%22%2F%3E");
   });
 });
