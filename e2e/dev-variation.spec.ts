@@ -49,3 +49,12 @@ test("a picked photo joins the gallery", async ({ page }) => {
   await expect(page.locator(".gallery-row")).toHaveCount(4);
   await expect(page.locator(".gallery-row", { hasText: "portrait.png" }).locator("figure.oo-card")).toHaveCount(textureCount);
 });
+
+test("the width strip resizes every card", async ({ page }) => {
+  await page.goto("/dev/variation");
+  await expect(page.locator(".gallery-row")).toHaveCount(3);
+  await page.getByRole("button", { name: "640" }).click();
+  const wrappers = await page.locator(".gallery-cell > div").all();
+  expect(wrappers.length).toBeGreaterThan(0);
+  for (const w of wrappers) expect((await w.boundingBox())?.width).toBe(640);
+});

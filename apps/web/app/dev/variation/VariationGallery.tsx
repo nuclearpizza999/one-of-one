@@ -6,6 +6,8 @@ import { type ChangeEvent, useEffect, useState } from "react";
 import { Strip } from "@/components/Strip";
 import { type DescribedPhoto, describePhoto } from "@/lib/photo";
 
+const WIDTHS = [160, 320, 640] as const;
+
 interface Entry {
   name: string;
   photo: DescribedPhoto;
@@ -17,22 +19,20 @@ export function VariationGallery() {
   /** null: each photo's own tone. */
   const [tone, setTone] = useState<Tone | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [width, setWidth] = useState<number>(WIDTHS[0]);
+  const [pickError, setPickError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const res = await fetch("/api/dev/photos");
       const { photos } = (await res.json()) as { photos: string[] };
-      const found: Entry[] = [];
       for (const name of photos) {
         const blob = await (await fetch(`/api/dev/photos/${encodeURIComponent(name)}`)).blob();
         const described = await describePhoto(new File([blob], name, { type: "image/jpeg" }));
-        if (described) found.push({ name, photo: described });
+        if (!cancelled && described) setEntries((prev) => [...prev, { name, photo: described }]);
       }
-      if (!cancelled) {
-        setEntries(found);
-        setLoaded(true);
-      }
+      if (!cancelled) setLoaded(true);
     })().catch(() => {
       if (!cancelled) setLoaded(true);
     });
@@ -45,8 +45,13 @@ export function VariationGallery() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    const described = await describePhoto(file);
-    if (described) setEntries((prev) => [...prev, { name: file.name, photo: described }]);
+    setPickError(false);
+    try {
+      const described = await describePhoto(file);
+      if (described) setEntries((prev) => [...prev, { name: file.name, photo: described }]);
+    } catch {
+      setPickError(true);
+    }
   }
 
   return (
@@ -64,10 +69,15 @@ export function VariationGallery() {
             ...Object.values(TONES).map((t) => ({ label: t.label, text: t.label, selected: tone === t.id, onClick: () => setTone(t.id) })),
           ]}
         />
+        <Strip
+          size="option"
+          cells={WIDTHS.map((w) => ({ label: String(w), text: String(w), selected: width === w, onClick: () => setWidth(w) }))}
+        />
         <label className="gallery-pick">
           Pick a photo <input type="file" accept="image/*" onChange={onPick} data-testid="gallery-input" />
         </label>
       </div>
+      {pickError ? <p className="status">Couldn&apos;t read that photo.</p> : null}
       {loaded && entries.length === 0 ? (
         <p className="status">Drop JPEGs into dev-photos/ at the repo root, or pick one.</p>
       ) : null}
@@ -87,7 +97,7 @@ export function VariationGallery() {
                   data-texture={t.id}
                   data-derived={t.id === photo.variation.texture ? "true" : "false"}
                 >
-                  <div style={{ width: 160 }}>
+                  <div style={{ width }}>
                     <Card
                       photo={{ src: photo.src, width: photo.width, height: photo.height }}
                       place={photo.caption.place}
