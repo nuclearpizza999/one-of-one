@@ -9,11 +9,11 @@ import { TIERS } from "../packages/card/src/variation";
 /**
  * Largest share of differing pixels allowed between the DOM card and the PNG.
  * DOM and canvas anti-alias text slightly differently, so it is not zero.
- * Tuned once on the first run (see the plan, Task 9 step 5) and then frozen; tightened from 0.001 to 0.0009 on 2026-10-22
- * when the smaller caption type made a one-unit drift (0.0028) fall under three times 0.001:
- * a one-unit caption drift must exceed three times this value.
+ * Rule: about twice the largest matching caption ratio observed (0.00028 on macOS Chromium,
+ * 2026-10-22, caption under the photo at 3.0 units), rounded up with headroom for Linux CI.
+ * A one-unit caption drift (observed 0.00282) must exceed three times it (0.0021).
  */
-const MAX_DIFF_RATIO = 0.0009;
+const MAX_DIFF_RATIO = 0.0007;
 
 // Textured cards: the two painters rasterise the SVG grain with slightly more difference than
 // text anti-aliasing alone (largest observed 0.00094 on macOS Chromium), so they get their own
