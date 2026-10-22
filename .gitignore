@@ -39,3 +39,6 @@ apps/web/next-env.d.ts
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Superpowers scratch (ledgers, briefs, brainstorm screens)
+.superpowers/

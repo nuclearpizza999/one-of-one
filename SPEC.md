@@ -19,9 +19,9 @@ All dimensions are a percentage of the card's outer width (call it W), so the ca
 | Frame | none. On screen, a 1px #e6e6e6 hairline on the light wall and a soft shadow (0 2% 7% of W, black at 14%) so the card reads as an object; nothing on the dark wall; nothing in the print file |
 | Mat | white (#fff) under the border texture, 5% of W on top, left and right |
 | Photo | 90% of W wide, native aspect ratio, never cropped, never filtered |
-| Caption strip | 19.2% of W tall, below the photo, like a Polaroid's bottom border |
-| Caption type | EB Garamond semibold (600), 3.4% of W, line height 1.32, color #111 |
-| Caption position | bottom-aligned: the last line present sits 3.6% of W above the bottom edge, the others stack directly above it |
+| Caption strip | 16% of W tall, below the photo, like a Polaroid's bottom border |
+| Caption type | EB Garamond semibold (600), 3.0% of W, line height 1.2, color #111 |
+| Caption position | hung under the photo: the first line's box starts 2.4% of W below the photo, the others stack directly beneath it, so a two-line caption sits where a three-line one does |
 | Line 1 (left) | place, e.g. Seoul, South Korea |
 | Line 2 (left) | date, e.g. July 1st, 2026 (full month, ordinal day, four-digit year) |
 | Line 3 (left) | coordinates, e.g. 37.5563° N, 126.9236° E: four decimals, regular weight (400), color #333; omitted when the photo has no GPS |
@@ -30,7 +30,7 @@ All dimensions are a percentage of the card's outer width (call it W), so the ca
 
 Rules:
 
-- Portrait, landscape and square photos all work; only the card's height changes. The caption strip stays 19.2% of W.
+- Portrait, landscape and square photos all work; only the card's height changes. The caption strip stays 16% of W.
 - The place line truncates with an ellipsis at 72% of the photo width; it never wraps.
 - Export renders at the photo's native resolution (cap 4800 px photo width) to PNG. 300 dpi at 12 inches needs a 3600 px photo, so the cap keeps iPhone and Fuji files full-size.
 - Card background, mat and border variation are the only colors in the design system. The app around the card is a white wall in light mode and a black wall in dark mode; the card itself does not change between them.
@@ -244,4 +244,4 @@ What gets replaced:
 
 Decided Oct 21, 2026: the map is gone and Guide takes its tab slot in phase two; the board stays a 3-across grid of square crops, the only cropped view in the product; precision is Area / City on every card, no Exact; the intro is assigned, not picked; no guide tag in v1; each public card gets the next number, even a second card by the same person; a photo that matches nothing gets a blank place line with a hint; the border variation is an option on prints (Plain / Border); directions open the platform's maps app; web first, with the card renderer as a standalone package a native app can reuse; the owner's phone draws the card PNG and the server stores it, with no server rendering.
 
-Decided Oct 22, 2026: the border covers the whole mat, the white around the photo and the caption strip, and never the photo. Until then foil, wear and the sheen sat on a band two units wide at the card's edge, which was invisible at phone size. "Caption contrast is never reduced" became the contrast floor in Card variation. Also decided Oct 22, 2026: Supabase (hosted free tier, the same open-source stack as the exit) carries accounts, Postgres and photo storage; sign-in comes first, by email and a six-digit code; Add to board saves privately and the number comes later from the opened card; the Board is rows of whole photos packed to fit and rescaled to the margins, so nothing in the product crops a photo; the card id is made at pick time and seeds the variation; prints come last in the build order.
+Decided Oct 22, 2026: the border covers the whole mat, the white around the photo and the caption strip, and never the photo. Until then foil, wear and the sheen sat on a band two units wide at the card's edge, which was invisible at phone size. "Caption contrast is never reduced" became the contrast floor in Card variation. Also decided Oct 22, 2026: Supabase (hosted free tier, the same open-source stack as the exit) carries accounts, Postgres and photo storage; sign-in comes first, by email and a six-digit code; Add to board saves privately and the number comes later from the opened card; the Board is rows of whole photos packed to fit and rescaled to the margins, so nothing in the product crops a photo; the card id is made at pick time and seeds the variation; prints come last in the build order. Later on Oct 22, 2026, after comparing five renders: the caption is smaller (3.0% of W, line height 1.2) and hangs under the photo (first line 2.4% of W below it) on a 16% strip, replacing the 3.4% type resting 3.6% above the bottom edge of a 19.2% strip.
