@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import piexif from "piexifjs";
-import { plausibleDate, readPhotoMetadata, wallClockMs } from "./exif";
+import { plausibleDate, readPhotoMetadata, wallClockMs, wallClockString } from "./exif";
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`../public/dev/${name}`, import.meta.url)));
 
@@ -104,5 +104,16 @@ describe("readPhotoMetadata", () => {
 describe("wallClockMs", () => {
   it("is the local wall-clock time as a zone-free number", () => {
     expect(wallClockMs(new Date(2026, 6, 1, 14, 30, 0))).toBe(Date.UTC(2026, 6, 1, 14, 30, 0));
+  });
+});
+
+describe("wallClockString", () => {
+  it("prints the local getters, zero-padded, with no zone", () => {
+    expect(wallClockString(new Date(2026, 6, 1, 14, 30, 5))).toBe("2026-07-01 14:30:05");
+    expect(wallClockString(new Date(2026, 0, 9, 0, 0, 0))).toBe("2026-01-09 00:00:00");
+  });
+  it("keeps the recorded day whatever the zone would do to UTC", () => {
+    const lateEvening = new Date(2026, 6, 1, 23, 30, 0);
+    expect(wallClockString(lateEvening).slice(0, 10)).toBe("2026-07-01");
   });
 });

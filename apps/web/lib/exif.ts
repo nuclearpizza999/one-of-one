@@ -72,3 +72,9 @@ export async function readPhotoMetadata(
 
   return { takenAt, dateSource, gps, camera };
 }
+
+/** The capture time for storage: `YYYY-MM-DD HH:MM:SS` from the local getters, no zone, so the day never shifts. */
+export function wallClockString(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
