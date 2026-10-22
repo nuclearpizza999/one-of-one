@@ -9,12 +9,13 @@
     "test:e2e": "playwright test",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
-    "fixtures": "node e2e/fixtures/make-fixtures.mjs"
+    "fixtures": "node e2e/fixtures/make-fixtures.mjs && node e2e/fixtures/make-exif-fixtures.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.19.2",
     "@types/pngjs": "^6.0.5",
+    "piexifjs": "^1.0.6",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
     "typescript": "~5.9.3"
