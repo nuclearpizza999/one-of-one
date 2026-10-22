@@ -23,7 +23,9 @@ test("Add to board saves the card privately and the Board shows it", async ({ pa
 
   // The thumbnail the Board shows carries no EXIF: no GPS, no capture date.
   const src = await tile.locator("img").getAttribute("src");
-  const bytes = await (await request.get(src!)).body();
+  const res = await request.get(src!);
+  expect(res.ok()).toBe(true);
+  const bytes = await res.body();
   expect(await exifr.gps(bytes)).toBeUndefined();
   expect(await exifr.parse(bytes, { pick: ["DateTimeOriginal"] })).toBeUndefined();
 
