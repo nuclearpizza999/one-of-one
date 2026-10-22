@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardPaths, cardRow } from "./save";
+import { cardPaths, cardRow, isDuplicateKey } from "./save";
 
 const file = (name: string, type: string) => new File([new Uint8Array([1, 2, 3])], name, { type });
 
@@ -74,5 +74,14 @@ describe("cardRow", () => {
     expect(row.place_id).toBeNull();
     expect("number" in row).toBe(false);
     expect("is_public" in row).toBe(false);
+  });
+});
+
+describe("isDuplicateKey", () => {
+  it("is true only for Postgres 23505", () => {
+    expect(isDuplicateKey({ code: "23505" })).toBe(true);
+    expect(isDuplicateKey({ code: "42501" })).toBe(false);
+    expect(isDuplicateKey(null)).toBe(false);
+    expect(isDuplicateKey({})).toBe(false);
   });
 });

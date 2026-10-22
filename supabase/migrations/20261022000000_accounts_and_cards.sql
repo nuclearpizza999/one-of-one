@@ -1,6 +1,7 @@
 -- Step 4: accounts and the private board. See docs/superpowers/specs/2026-10-22-step-4-accounts-board-design.md.
 
-create extension if not exists postgis;
+-- PostGIS goes in the extensions schema: in public, PostgREST would expose spatial_ref_sys and anon would hold write privileges on it.
+create extension if not exists postgis with schema extensions;
 
 -- users mirrors auth.users; a trigger fills it on sign-up. No screen uses handle yet.
 create table public.users (

@@ -1,12 +1,14 @@
 begin;
-select plan(23);
+select plan(27);
 
 -- Two signed-up users. Inserting into auth.users fires the trigger that fills public.users.
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
 values ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '', now(), now(), now(), '{}', '{}'),
        ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'b@example.test', '', now(), now(), now(), '{}', '{}');
 
-select is((select count(*) from public.users), 2::bigint, 'sign-up fills public.users');
+select is((select count(*) from public.users where id in ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000b')), 2::bigint, 'sign-up fills public.users');
+
+select is((select table_schema::text from information_schema.tables where table_name = 'spatial_ref_sys'), 'extensions', 'PostGIS lives outside public');
 
 -- Step 5's path: postgres (a security-definer owner) may set publication fields.
 insert into public.cards (id, user_id, original_path, rendition_path, thumb_path, photo_w, photo_h, date_source, variation, intro, variation_seed, number, is_public, published_at, share_token)
@@ -38,6 +40,7 @@ select throws_ok($$ insert into public.places (kind, name, lat, lng, provider_re
 
 select lives_ok($$ insert into storage.objects (bucket_id, name) values ('originals', '00000000-0000-0000-0000-00000000000a/x.jpg') $$, 'a user can upload under their own prefix');
 select throws_ok($$ insert into storage.objects (bucket_id, name) values ('originals', '00000000-0000-0000-0000-00000000000b/x.jpg') $$, '42501', null, 'a user cannot upload under another prefix');
+select is((select count(*) from storage.objects where bucket_id = 'originals'), 1::bigint, 'the owner lists their own object');
 
 select ok(not has_function_privilege('anon', 'public.ensure_place(text, text, text, double precision, double precision, integer, text)', 'execute'), 'anon cannot execute ensure_place');
 select ok(has_function_privilege('authenticated', 'public.ensure_place(text, text, text, double precision, double precision, integer, text)', 'execute'), 'authenticated can execute ensure_place');
@@ -59,6 +62,8 @@ select throws_ok($$ update public.cards set user_id = '00000000-0000-0000-0000-0
 -- Act as user B: sees nothing of A's.
 set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-00000000000b", "role": "authenticated"}';
 select is((select count(*) from public.cards), 0::bigint, 'another user sees no cards');
+select is((select count(*) from public.users), 1::bigint, 'another user sees only their own users row');
+select is((select count(*) from storage.objects where bucket_id = 'originals'), 0::bigint, 'another user lists none of the owner''s objects');
 
 select * from finish();
 rollback;

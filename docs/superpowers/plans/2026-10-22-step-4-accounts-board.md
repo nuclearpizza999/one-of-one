@@ -2160,9 +2160,10 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Nothing in this task is code; it is the list Alex works through so friends can sign in from their phones.
 
-- [ ] Create the hosted Supabase project (free tier). In its dashboard, Authentication → Email Templates → Magic Link: set the subject to "Your One of One code" and the body to the content of `supabase/templates/magic_link.html`.
+- [ ] Create the hosted Supabase project (free tier). In its dashboard, Authentication → Email Templates → Magic Link: set the subject to "Your One of One code" and the body to the content of `supabase/templates/magic_link.html`. Set the **Confirm signup** template to the same body, since a hosted project confirms new addresses by default and would otherwise send a link, and confirm under Authentication → Providers → Email that the OTP length is 6, which the code field enforces.
 - [ ] `npx supabase login`, `npx supabase link --project-ref <ref>`, `npx supabase db push`. Confirm in the dashboard that the three buckets exist and are private.
 - [ ] Authentication → Rate Limits: leave the defaults until a custom SMTP sender is connected; then Authentication → SMTP Settings: Resend's SMTP host, port 465, user `resend`, the API key as the password, a sender address on a domain Alex owns and has verified in Resend.
 - [ ] Vercel: import the repository, framework Next.js, root directory `apps/web` with "Include source files outside of the Root Directory" on; environment variables `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the project's API settings. Deploy.
 - [ ] Supabase Authentication → URL Configuration: Site URL = the Vercel address.
+- [ ] Decide whether sign-ups stay open: anyone with the Vercel link can create an account and upload originals of up to 50 MB each against the free tier's 1 GB. After friends have joined, either turn off 'Allow new users to sign up' in Authentication → Providers → Email, or record here that it stays open on purpose.
 - [ ] From a phone: sign in, make a card, save it, open it, print it. Then run the first of the deferred checks: time the print of a foil card on the phone and note it in `.superpowers/sdd/progress.md`.

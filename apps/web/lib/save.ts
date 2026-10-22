@@ -28,6 +28,15 @@ export interface CardRowInput {
   paths: { original: string; rendition: string; thumb: string };
 }
 
+/**
+ * True for Postgres 23505 (duplicate key). On a phone network the insert can succeed while its
+ * response is lost; the retry then hits the same id. The id is a random UUID only this client made,
+ * so a duplicate means the card is already saved and the retry counts as success.
+ */
+export function isDuplicateKey(error: { code?: string } | null | undefined): boolean {
+  return error?.code === "23505";
+}
+
 /** The insert payload. Never carries a number or a public flag: the database guard would clear them anyway. */
 export interface CardRow {
   id: string;
@@ -113,5 +122,5 @@ export async function saveCard(supabase: SupabaseClient, userId: string, photo: 
   ]);
   const placeId = photo.match ? await ensurePlace(supabase, photo.match) : null;
   const { error } = await supabase.from("cards").insert(cardRow({ photo, caption, userId, placeId, paths }));
-  if (error) throw error;
+  if (error && !isDuplicateKey(error)) throw error;
 }
