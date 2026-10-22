@@ -7,6 +7,7 @@ CLAUDE.md                 rules and commands Claude Code loads every session
 SPEC.md                   the full build spec (source of truth)
 docs/superpowers/         design specs and implementation plans, one per build step
 packages/card/            the card renderer: layout, DOM painter, PNG painter, fonts, intros
+packages/places/          place resolution: landmark and city data, the resolver, the provider interface
 apps/web/                 the Next.js app: Board, Make, chrome
 e2e/                      Playwright tests, including the screen-versus-print diff
 prototype/one-of-one.html the original working Make screen, kept for reference

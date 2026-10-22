@@ -3,12 +3,14 @@
 import {
   Card,
   assignIntro,
+  fmtCoords,
   fmtDate,
   renderPng,
   seedFromPhoto,
   type IntroId,
   type LineKind,
 } from "@one-of-one/card";
+import type { PlaceMatch } from "@one-of-one/places";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
@@ -17,6 +19,8 @@ import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
+import { readPhotoMetadata } from "@/lib/exif";
+import { statusFor } from "@/lib/status";
 
 interface Photo {
   file: File;
@@ -39,6 +43,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** Asks our own route for the place. Throws on any failure so the caller can say so. */
+async function lookupPlace(lat: number, lng: number): Promise<PlaceMatch | null> {
+  const res = await fetch(`/api/place?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+  if (!res.ok) throw new Error(`place lookup failed: ${res.status}`);
+  const body = (await res.json()) as { match: PlaceMatch | null };
+  return body.match;
+}
+
 export function MakeScreen() {
   const router = useRouter();
   const wall = useWall();
@@ -53,6 +65,8 @@ export function MakeScreen() {
   const [busy, setBusy] = useState(false);
   // Caption edits commit on blur; print reads the committed text from here, not from state.
   const captionRef = useRef({ place: "", date: "", coords: "" });
+  // The resolved place for step 5's numbering; not shown on the card.
+  const placeMatchRef = useRef<PlaceMatch | null>(null);
 
   // Release the previous photo's object URL when it is replaced or the screen unmounts.
   useEffect(() => {
@@ -67,28 +81,40 @@ export function MakeScreen() {
     if (!file) return;
     setStatus("Reading the photo…");
     const src = URL.createObjectURL(file);
-    let img: HTMLImageElement;
-    try {
-      img = await loadImage(src);
-    } catch {
+    const [img, meta] = await Promise.all([
+      loadImage(src).catch(() => null),
+      readPhotoMetadata(file, file.lastModified),
+    ]);
+    if (!img || img.naturalWidth === 0 || img.naturalHeight === 0) {
       URL.revokeObjectURL(src);
       setStatus("This photo format can't be shown here. Try a JPEG or PNG.");
       return;
     }
-    if (img.naturalWidth === 0 || img.naturalHeight === 0) {
-      URL.revokeObjectURL(src);
-      setStatus("This photo format can't be shown here. Try a JPEG or PNG.");
-      return;
+
+    let match: PlaceMatch | null = null;
+    let lookupFailed = false;
+    if (meta.gps) {
+      try {
+        match = await lookupPlace(meta.gps.lat, meta.gps.lng);
+      } catch {
+        lookupFailed = true;
+      }
     }
-    const initialDate = file.lastModified ? fmtDate(new Date(file.lastModified)) : "";
-    captionRef.current = { place: "", date: initialDate, coords: "" };
+
+    const caption = {
+      place: match?.label ?? "",
+      date: meta.takenAt ? fmtDate(meta.takenAt) : "",
+      coords: meta.gps ? fmtCoords(meta.gps.lat, meta.gps.lng) : "",
+    };
+    captionRef.current = caption;
+    placeMatchRef.current = match;
     setPhoto({ file, src, width: img.naturalWidth, height: img.naturalHeight, element: img });
-    setPlace("");
-    setCoords("");
-    setDate(initialDate);
+    setPlace(caption.place);
+    setDate(caption.date);
+    setCoords(caption.coords);
     setIntro(assignIntro(seedFromPhoto(file.size, img.naturalWidth, img.naturalHeight)).id);
     setReplayKey((k) => k + 1);
-    setStatus("The date is the file's. Tap the caption lines to type the place and fix the date.");
+    setStatus(statusFor({ gps: meta.gps !== null, dateSource: meta.dateSource, match: match?.kind ?? null, lookupFailed }));
   }
 
   function onCaptionChange(field: LineKind, text: string) {
