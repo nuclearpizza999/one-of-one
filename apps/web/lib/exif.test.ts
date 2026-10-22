@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import piexif from "piexifjs";
-import { plausibleDate, readPhotoMetadata } from "./exif";
+import { plausibleDate, readPhotoMetadata, wallClockMs } from "./exif";
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`../public/dev/${name}`, import.meta.url)));
 
@@ -98,5 +98,11 @@ describe("readPhotoMetadata", () => {
   it("rejects a date in the future", () => {
     expect(plausibleDate(new Date(Date.now() + 7 * 24 * 3600 * 1000))).toBeNull();
     expect(plausibleDate(new Date(Date.now() + 3600 * 1000))).toBeInstanceOf(Date);
+  });
+});
+
+describe("wallClockMs", () => {
+  it("is the local wall-clock time as a zone-free number", () => {
+    expect(wallClockMs(new Date(2026, 6, 1, 14, 30, 0))).toBe(Date.UTC(2026, 6, 1, 14, 30, 0));
   });
 });

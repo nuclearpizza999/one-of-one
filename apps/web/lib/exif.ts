@@ -15,6 +15,14 @@ export interface PhotoMetadata {
   camera: { make: string; model: string } | null;
 }
 
+/**
+ * The capture time as a zone-free number, from the local getters, so the same photo seeds the same on every device.
+ * Never use getTime() for this.
+ */
+export function wallClockMs(d: Date): number {
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+}
+
 /** A capture date we are willing to print: a real Date between 1970 and two days from now. Unset camera clocks produce 1899. */
 export function plausibleDate(value: unknown, now = Date.now()): Date | null {
   if (!(value instanceof Date)) return null;

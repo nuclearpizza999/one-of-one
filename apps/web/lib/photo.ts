@@ -8,7 +8,7 @@ import {
   variationSeed,
 } from "@one-of-one/card";
 import type { PlaceMatch } from "@one-of-one/places";
-import { type PhotoMetadata, readPhotoMetadata } from "./exif";
+import { type PhotoMetadata, readPhotoMetadata, wallClockMs } from "./exif";
 
 export interface Caption {
   place: string;
@@ -112,7 +112,7 @@ export async function describePhoto(file: File, lookup: PlaceLookup = lookupPlac
     sizeBytes: file.size,
     width: img.naturalWidth,
     height: img.naturalHeight,
-    takenAtMs: exifTime?.getTime() ?? null,
+    takenAtMs: exifTime ? wallClockMs(exifTime) : null,
     camera: meta.camera,
   });
   const variation = deriveVariation({

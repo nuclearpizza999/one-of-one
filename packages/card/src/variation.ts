@@ -92,7 +92,7 @@ export interface VariationInputs {
 
 /**
  * First-draft mapping (SPEC.md: settle after textures have been seen on about
- * 50 real photos). Edit the table, not the functions; the tests read it too.
+ * 50 real photos). Edit the table, not the functions.
  */
 export const VARIATION_RULES = {
   tone: {
