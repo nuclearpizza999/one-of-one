@@ -1,0 +1,198 @@
+[
+  {
+    "name": "Golden Gate Bridge",
+    "region": "San Francisco",
+    "lat": 37.8199,
+    "lng": -122.4783,
+    "radiusM": 1500
+  },
+  {
+    "name": "Eiffel Tower",
+    "region": "Paris",
+    "lat": 48.8584,
+    "lng": 2.2945,
+    "radiusM": 500
+  },
+  {
+    "name": "Louvre",
+    "region": "Paris",
+    "lat": 48.8606,
+    "lng": 2.3376,
+    "radiusM": 450
+  },
+  {
+    "name": "Times Square",
+    "region": "New York",
+    "lat": 40.758,
+    "lng": -73.9855,
+    "radiusM": 350
+  },
+  {
+    "name": "Brooklyn Bridge",
+    "region": "New York",
+    "lat": 40.7061,
+    "lng": -73.9969,
+    "radiusM": 900
+  },
+  {
+    "name": "Statue of Liberty",
+    "region": "New York",
+    "lat": 40.6892,
+    "lng": -74.0445,
+    "radiusM": 500
+  },
+  {
+    "name": "Big Ben",
+    "region": "London",
+    "lat": 51.5007,
+    "lng": -0.1246,
+    "radiusM": 400
+  },
+  {
+    "name": "Tower Bridge",
+    "region": "London",
+    "lat": 51.5055,
+    "lng": -0.0754,
+    "radiusM": 450
+  },
+  {
+    "name": "Colosseum",
+    "region": "Rome",
+    "lat": 41.8902,
+    "lng": 12.4922,
+    "radiusM": 400
+  },
+  {
+    "name": "Sagrada Família",
+    "region": "Barcelona",
+    "lat": 41.4036,
+    "lng": 2.1744,
+    "radiusM": 350
+  },
+  {
+    "name": "Brandenburg Gate",
+    "region": "Berlin",
+    "lat": 52.5163,
+    "lng": 13.3777,
+    "radiusM": 350
+  },
+  {
+    "name": "Shibuya Crossing",
+    "region": "Tokyo",
+    "lat": 35.6595,
+    "lng": 139.7004,
+    "radiusM": 250
+  },
+  {
+    "name": "Tokyo Tower",
+    "region": "Tokyo",
+    "lat": 35.6586,
+    "lng": 139.7454,
+    "radiusM": 400
+  },
+  {
+    "name": "Fushimi Inari",
+    "region": "Kyoto",
+    "lat": 34.9671,
+    "lng": 135.7727,
+    "radiusM": 700
+  },
+  {
+    "name": "Gyeongbokgung",
+    "region": "Seoul",
+    "lat": 37.5796,
+    "lng": 126.977,
+    "radiusM": 500
+  },
+  {
+    "name": "N Seoul Tower",
+    "region": "Seoul",
+    "lat": 37.5512,
+    "lng": 126.9882,
+    "radiusM": 400
+  },
+  {
+    "name": "Hollywood Sign",
+    "region": "Los Angeles",
+    "lat": 34.1341,
+    "lng": -118.3215,
+    "radiusM": 900
+  },
+  {
+    "name": "Griffith Observatory",
+    "region": "Los Angeles",
+    "lat": 34.1184,
+    "lng": -118.3004,
+    "radiusM": 400
+  },
+  {
+    "name": "Santa Monica Pier",
+    "region": "Los Angeles",
+    "lat": 34.0094,
+    "lng": -118.4973,
+    "radiusM": 400
+  },
+  {
+    "name": "Sydney Opera House",
+    "region": "Sydney",
+    "lat": -33.8568,
+    "lng": 151.2153,
+    "radiusM": 400
+  },
+  {
+    "name": "Burj Khalifa",
+    "region": "Dubai",
+    "lat": 25.1972,
+    "lng": 55.2744,
+    "radiusM": 500
+  },
+  {
+    "name": "Marina Bay Sands",
+    "region": "Singapore",
+    "lat": 1.2834,
+    "lng": 103.8607,
+    "radiusM": 500
+  },
+  {
+    "name": "Taj Mahal",
+    "region": "Agra",
+    "lat": 27.1751,
+    "lng": 78.0421,
+    "radiusM": 600
+  },
+  {
+    "name": "Christ the Redeemer",
+    "region": "Rio de Janeiro",
+    "lat": -22.9519,
+    "lng": -43.2105,
+    "radiusM": 500
+  },
+  {
+    "name": "Machu Picchu",
+    "region": "Peru",
+    "lat": -13.1631,
+    "lng": -72.545,
+    "radiusM": 1200
+  },
+  {
+    "name": "Angkor Wat",
+    "region": "Siem Reap",
+    "lat": 13.4125,
+    "lng": 103.867,
+    "radiusM": 1200
+  },
+  {
+    "name": "Chichén Itzá",
+    "region": "Yucatán",
+    "lat": 20.6843,
+    "lng": -88.5678,
+    "radiusM": 900
+  },
+  {
+    "name": "Petra",
+    "region": "Jordan",
+    "lat": 30.3285,
+    "lng": 35.4444,
+    "radiusM": 1500
+  }
+]
