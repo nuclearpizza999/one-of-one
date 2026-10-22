@@ -13,6 +13,15 @@ export interface PhotoMetadata {
   gps: { lat: number; lng: number } | null;
 }
 
+/** A capture date we are willing to print: a real Date between 1970 and a day from now. Unset camera clocks produce 1899. */
+export function plausibleDate(value: unknown, now = Date.now()): Date | null {
+  if (!(value instanceof Date)) return null;
+  const t = value.getTime();
+  if (Number.isNaN(t)) return null;
+  if (value.getFullYear() < 1970 || t > now + 24 * 60 * 60 * 1000) return null;
+  return value;
+}
+
 /** A File or Blob in the browser, a Buffer or Uint8Array in Node. Never throws. */
 export async function readPhotoMetadata(
   input: Blob | ArrayBuffer | Uint8Array,
@@ -24,13 +33,13 @@ export async function readPhotoMetadata(
 
   try {
     const out = await parse(input, { tiff: true, exif: true, pick: ["DateTimeOriginal", "CreateDate"] });
-    const d: unknown = out?.DateTimeOriginal ?? out?.CreateDate;
-    if (d instanceof Date && !Number.isNaN(d.getTime())) {
+    const d = plausibleDate(out?.DateTimeOriginal) ?? plausibleDate(out?.CreateDate);
+    if (d) {
       takenAt = d;
       dateSource = "exif";
     }
   } catch {
-    // No usable EXIF; the caption stays editable.
+    // No usable EXIF date.
   }
 
   try {

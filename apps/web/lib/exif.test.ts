@@ -1,9 +1,20 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { readPhotoMetadata } from "./exif";
+import piexif from "piexifjs";
+import { plausibleDate, readPhotoMetadata } from "./exif";
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`../public/dev/${name}`, import.meta.url)));
+
+function withDates(dateTimeOriginal: string | null, createDate: string | null): Uint8Array {
+  const binary = fixture("nogps.jpg").toString("binary");
+  const exif = piexif.load(binary);
+  delete exif.Exif[piexif.ExifIFD.DateTimeOriginal];
+  delete exif.Exif[piexif.ExifIFD.DateTimeDigitized];
+  if (dateTimeOriginal) exif.Exif[piexif.ExifIFD.DateTimeOriginal] = dateTimeOriginal;
+  if (createDate) exif.Exif[piexif.ExifIFD.DateTimeDigitized] = createDate;
+  return Buffer.from(piexif.insert(piexif.dump(exif), piexif.remove(binary)), "binary");
+}
 
 describe("readPhotoMetadata", () => {
   it("reads the capture date and GPS from seoul.jpg", async () => {
@@ -52,5 +63,30 @@ describe("readPhotoMetadata", () => {
   it("never throws on garbage", async () => {
     const m = await readPhotoMetadata(new Uint8Array([1, 2, 3, 4]));
     expect(m).toEqual({ takenAt: null, dateSource: "none", gps: null });
+  });
+
+  it("falls back to CreateDate when DateTimeOriginal is an unset clock", async () => {
+    const m = await readPhotoMetadata(withDates("0000:00:00 00:00:00", "2026:07:01 14:30:00"));
+    expect(m.dateSource).toBe("exif");
+    expect(m.takenAt?.getFullYear()).toBe(2026);
+    expect(m.takenAt?.getHours()).toBe(14);
+  });
+
+  it("uses CreateDate when DateTimeOriginal is absent", async () => {
+    const m = await readPhotoMetadata(withDates(null, "2024:12:23 09:00:00"));
+    expect(m.dateSource).toBe("exif");
+    expect(m.takenAt?.getFullYear()).toBe(2024);
+    expect(m.takenAt?.getMonth()).toBe(11);
+    expect(m.takenAt?.getDate()).toBe(23);
+  });
+
+  it("falls back to the file time when both EXIF dates are implausible", async () => {
+    const m = await readPhotoMetadata(withDates("0000:00:00 00:00:00", "1899:12:31 00:00:00"), Date.UTC(2024, 0, 1));
+    expect(m.dateSource).toBe("file");
+  });
+
+  it("rejects a date in the future", () => {
+    expect(plausibleDate(new Date(Date.now() + 7 * 24 * 3600 * 1000))).toBeNull();
+    expect(plausibleDate(new Date(Date.now() + 3600 * 1000))).toBeInstanceOf(Date);
   });
 });
