@@ -77,7 +77,7 @@ describe("Card with a photo", () => {
     expect(html).toContain('data-tone="warm"');
     expect(html).toContain('data-tier="fine"');
     expect(html).toContain('data-motion="none"');
-    expect(html).toContain("--oo-band:2cqw");
+    expect(html).not.toContain("--oo-band");
   });
 
   it("omits the border without a variation", () => {

@@ -192,6 +192,10 @@ test("the dev panel switches the live card's variation and returns to the assign
   await tier.getByRole("button", { name: "Animated" }).click();
   await expect(card).toHaveAttribute("data-motion", "sheen");
   await expect(page.locator(".oo-frame")).toHaveClass(/oo-motion-sheen/);
+  await expect(card).toHaveAttribute("data-texture", "foil"); // a foil tier always carries the foil texture
+  await tier.getByRole("button", { name: "Standard" }).click();
+  await expect(card).toHaveAttribute("data-texture", "worn"); // and leaving it restores the camera rule
+  await expect(card).toHaveAttribute("data-motion", "none");
 
   const intro = page.locator(".dev-field", { hasText: "Intro" });
   await intro.getByRole("button", { name: "Flip" }).click();

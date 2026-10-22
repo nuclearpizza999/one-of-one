@@ -33,9 +33,20 @@ export type {
   VariationOverrides,
 } from "./variation";
 export { GREY_SATURATION, paletteFromPixels } from "./palette";
-export { TEXTURES, foilBand, grainFilter, wearStrokes } from "./textures";
+export { TEXTURES, foilFill, grainFilter, mottleFilter, wearStrokes } from "./textures";
 export type { BorderDraw, Texture, TextureDef, TextureFragments } from "./textures";
-export { BAND_UNITS, borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "./border";
+export { borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "./border";
+export {
+  CAPTION_INK,
+  CAPTION_MIN_CONTRAST,
+  COORDS_INK,
+  COORDS_MIN_CONTRAST,
+  clearsCaptionFloor,
+  contrastRatio,
+  lightenToCaptionFloor,
+  relativeLuminance,
+  withCaptionContrast,
+} from "./contrast";
 export { Card } from "./Card";
 export type { CardPhoto, CardProps } from "./Card";
 export { PRINT_CAP, drawCard, ellipsize, printDimensions, renderPng } from "./renderPng";

@@ -1,3 +1,4 @@
+import { withCaptionContrast } from "./contrast";
 import { type IntroId, assignIntro } from "./intros";
 import type { Texture } from "./textures";
 
@@ -31,11 +32,15 @@ export type Tone = keyof typeof TONES;
 
 export const NEUTRAL_PALETTE: Palette = { tint: TONES.neutral.tint, foil: TONES.neutral.foil };
 
-/** The colours a tone resolves to. The photo tone needs the sampled palette; without one it is neutral. */
+/**
+ * The colours a tone resolves to, each clearing the caption contrast floor. The
+ * photo tone needs the sampled palette; without one it is neutral. Presets clear
+ * the floor as written; a sampled palette is lightened until it does.
+ */
 export function paletteFor(tone: Tone, photoPalette: Palette | null): Palette {
   const def = TONES[tone];
-  if (def.source === "preset") return { tint: def.tint, foil: def.foil };
-  return photoPalette ?? NEUTRAL_PALETTE;
+  const raw = def.source === "preset" ? { tint: def.tint, foil: def.foil } : (photoPalette ?? NEUTRAL_PALETTE);
+  return withCaptionContrast(raw);
 }
 
 export interface MotionDef {
@@ -184,14 +189,22 @@ export function deriveVariation(inputs: VariationInputs): Variation {
 /** What the development panel may change. Production never calls withOverrides with anything but {}. */
 export type VariationOverrides = Partial<Pick<Variation, "texture" | "tone" | "tier" | "motion" | "intro">>;
 
-/** Apply overrides and re-resolve what depends on them: the palette from the tone, the motion from an overridden tier. */
+/** The texture an overridden tier implies: a foil tier always carries foil; leaving one drops back to the plain fallback. */
+function textureForTier(tier: Tier, current: Texture): Texture {
+  const t = VARIATION_RULES.texture;
+  if (TIERS[tier].foil) return t.foil;
+  return current === t.foil ? t.fallback : current;
+}
+
+/** Apply overrides and re-resolve what depends on them: the palette from the tone, the motion and the texture from an overridden tier. */
 export function withOverrides(base: Variation, overrides: VariationOverrides, photoPalette: Palette | null): Variation {
   const tone = overrides.tone ?? base.tone;
   const tier = overrides.tier ?? base.tier;
   const motion = overrides.motion ?? (overrides.tier !== undefined ? TIERS[tier].motion : base.motion);
+  const texture = overrides.texture ?? (overrides.tier !== undefined ? textureForTier(tier, base.texture) : base.texture);
   return {
     ...base,
-    texture: overrides.texture ?? base.texture,
+    texture,
     tone,
     palette: paletteFor(tone, photoPalette),
     tier,

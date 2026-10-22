@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { CAPTION_INK, CAPTION_MIN_CONTRAST, COORDS_INK, COORDS_MIN_CONTRAST, contrastRatio } from "../src/contrast";
 import { INTROS, assignIntro } from "../src/intros";
 import {
   MOTIONS,
   NEUTRAL_PALETTE,
   TIERS,
   TONES,
+  VARIATION_RULES,
   type Palette,
   type VariationInputs,
   deriveTexture,
@@ -17,7 +19,8 @@ import {
 } from "../src/variation";
 
 const at = (month: number, hour: number) => new Date(2026, month, 15, hour, 0, 0);
-const photoPalette: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#5a74b0"] };
+// Clears the caption contrast floor as written, so paletteFor returns it unchanged.
+const photoPalette: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"] };
 
 describe("registries", () => {
   it("have ids equal to their keys and non-empty labels", () => {
@@ -112,6 +115,16 @@ describe("paletteFor", () => {
   });
   it("falls back to neutral when the photo tone has no sample", () => {
     expect(paletteFor("photo", null)).toEqual(NEUTRAL_PALETTE);
+  });
+  it("lightens a sampled palette's foil until the caption keeps its contrast floor", () => {
+    const dark: Palette = { tint: "#223355", foil: ["#8899bb", "#223355"] };
+    const p = paletteFor("photo", dark);
+    expect(p.tint).toBe(dark.tint);
+    expect(p.foil[1]).not.toBe(dark.foil[1]);
+    for (const stop of p.foil) {
+      expect(contrastRatio(stop, CAPTION_INK)).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
+      expect(contrastRatio(stop, COORDS_INK)).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+    }
     expect(NEUTRAL_PALETTE).toEqual({ tint: TONES.neutral.tint, foil: TONES.neutral.foil });
   });
 });
@@ -169,6 +182,15 @@ describe("withOverrides", () => {
     expect(withOverrides(base, { tier: "animated" }, null).motion).toBe("sheen");
     expect(withOverrides(base, { tier: "animated", motion: "none" }, null).motion).toBe("none");
     expect(withOverrides(base, { motion: "sheen" }, null).tier).toBe("standard");
+  });
+  it("carries the foil texture with an overridden foil tier, and drops it when the tier goes back", () => {
+    expect(withOverrides(base, { tier: "foil" }, null).texture).toBe(VARIATION_RULES.texture.foil);
+    expect(withOverrides(base, { tier: "animated" }, null).texture).toBe(VARIATION_RULES.texture.foil);
+    expect(withOverrides(base, { tier: "fine" }, null).texture).toBe(base.texture);
+    const foilBase = deriveVariation({ seed: 42, takenAt: at(2, 12), camera: null, number: 50, placeKind: null, photoPalette: null });
+    expect(foilBase.texture).toBe(VARIATION_RULES.texture.foil);
+    expect(withOverrides(foilBase, { tier: "standard" }, null).texture).toBe(VARIATION_RULES.texture.fallback);
+    expect(withOverrides(base, { tier: "foil", texture: "worn" }, null).texture).toBe("worn");
   });
   it("overrides texture and intro directly", () => {
     const v = withOverrides(base, { texture: "worn", intro: "flip" }, null);

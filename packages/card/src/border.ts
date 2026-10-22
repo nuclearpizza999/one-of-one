@@ -2,9 +2,6 @@ import { CARD } from "./layout";
 import { type BorderDraw, TEXTURES } from "./textures";
 import { TIERS, type Variation } from "./variation";
 
-/** Width of the outer band, in card units, that carries foil, wear and the sheen. */
-export const BAND_UNITS = 2;
-
 /** Small, fast, deterministic PRNG in [0, 1). */
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -20,10 +17,10 @@ export function mulberry32(seed: number): () => number {
 const f = (n: number): string => Number(n.toFixed(3)).toString();
 
 /**
- * The border as one SVG document in card units (viewBox 0 0 100 H). Everything
- * drawn sits in one of two clip groups: the mat minus the photo box, or the
- * outer band. The photo box is never painted. Both painters render this
- * same document, so screen and print match by construction.
+ * The border as one SVG document in card units (viewBox 0 0 100 H): the whole
+ * mat, around the photo and under the caption, drawn in one clip group that
+ * cuts the photo box out. The photo box is never painted. Both painters render
+ * this same document, so screen and print match by construction.
  */
 export function borderSvg(v: Variation, cardHeightUnits: number): string {
   const H = Number(cardHeightUnits.toFixed(3));
@@ -40,18 +37,14 @@ export function borderSvg(v: Variation, cardHeightUnits: number): string {
     tier: TIERS[v.tier],
     width: 100,
     height: H,
-    band: BAND_UNITS,
     photo,
   };
   const frag = TEXTURES[v.texture].draw(d);
-  const B = BAND_UNITS;
   const matClip = `<clipPath id="mat"><path clip-rule="evenodd" d="M0 0H100V${f(H)}H0Z M${f(photo.x)} ${f(photo.y)}h${f(photo.w)}v${f(photo.h)}h-${f(photo.w)}Z"/></clipPath>`;
-  const bandClip = `<clipPath id="band"><path clip-rule="evenodd" d="M0 0H100V${f(H)}H0Z M${B} ${B}H${100 - B}V${f(H - B)}H${B}Z"/></clipPath>`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 ${f(H)}" width="100" height="${f(H)}">` +
-    `<defs>${matClip}${bandClip}${frag.defs}</defs>` +
+    `<defs>${matClip}${frag.defs}</defs>` +
     `<g clip-path="url(#mat)">${frag.mat}</g>` +
-    `<g clip-path="url(#band)">${frag.band}</g>` +
     `</svg>`
   );
 }

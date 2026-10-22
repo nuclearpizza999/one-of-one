@@ -3,7 +3,7 @@
 import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent } from "react";
 import type { IntroId } from "./intros";
 import { CARD_FONT_FAMILY } from "./fonts";
-import { BAND_UNITS, borderDataUrl } from "./border";
+import { borderDataUrl } from "./border";
 import { CARD, cardHeightUnits } from "./layout";
 import type { LineKind } from "./layout";
 import { MOTIONS, type Variation } from "./variation";
@@ -60,7 +60,6 @@ const FRAME_VARS = {
   "--oo-fs": `${CARD.fontSize}cqw`,
   "--oo-lh": `${CARD.lineHeight}`,
   "--oo-place-max": `${CARD.photoWidth * CARD.placeMaxWidthRatio}cqw`,
-  "--oo-band": `${BAND_UNITS}cqw`,
   "--oo-font": CARD_FONT_FAMILY,
   "--oo-ink": CARD.ink,
   "--oo-ink-coords": CARD.inkCoords,

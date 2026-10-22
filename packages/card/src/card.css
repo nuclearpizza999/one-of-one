@@ -226,18 +226,17 @@
   to { transform: rotateY(0deg); }
 }
 
-/* Sheen: a slow light sweep over the outer band only. Screen only; the print never carries it. */
+/*
+ * Sheen: a slow light sweep over the whole mat. Screen only; the print never
+ * carries it. The photo and the caption sit above the border layer, so the sweep
+ * passes under the words and never over the photo.
+ */
 .oo-motion-sheen .oo-border::after {
   content: "";
   position: absolute;
   inset: 0;
-  box-sizing: border-box;
-  padding: var(--oo-band);
   background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.55) 50%, transparent 62%) 0 0 / 300% 100% no-repeat;
   mix-blend-mode: screen;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   animation: oo-sheen 6s linear infinite;
 }
 @keyframes oo-sheen {

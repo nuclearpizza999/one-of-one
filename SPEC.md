@@ -17,7 +17,7 @@ All dimensions are a percentage of the card's outer width (call it W), so the ca
 | Element | Value |
 | --- | --- |
 | Frame | none. On screen, a 1px #e6e6e6 hairline on the light wall and a soft shadow (0 2% 7% of W, black at 14%) so the card reads as an object; nothing on the dark wall; nothing in the print file |
-| Mat | white (#fff), 5% of W on top, left and right |
+| Mat | white (#fff) under the border texture, 5% of W on top, left and right |
 | Photo | 90% of W wide, native aspect ratio, never cropped, never filtered |
 | Caption strip | 19.2% of W tall, below the photo, like a Polaroid's bottom border |
 | Caption type | EB Garamond semibold (600), 3.4% of W, line height 1.32, color #111 |
@@ -37,9 +37,9 @@ Rules:
 
 ## Card variation
 
-Layout and type are fixed on every card; only the border varies, the way a trading-card set varies its frame and foil while the text stays put. The aim is that no two cards look alike, so the name is literal.
+Layout and type are fixed on every card; only the border varies, the way a trading-card set varies its frame and foil while the text stays put. The border is the whole mat: the white around the photo and the caption strip beneath it. Every texture covers all of it, and the photo is the one area nothing touches. The aim is that no two cards look alike, so the name is literal.
 
-- What varies: border texture (paper grain, edge wear, foil gradient), a finish tier, and a small border motion on screen. The photo, caption font, sizes and positions never change, and caption contrast is never reduced.
+- What varies: border texture (paper grain, edge wear, foil gradient), a finish tier, and a small border motion on screen. The photo, caption font, sizes and positions never change, and the caption keeps a contrast floor: the darkest colour a texture can put under it stays at least 4.5:1 against the caption ink (#111) and 3:1 against the coordinates ink (#333). The preset palettes clear the floor as written; a palette sampled from a photo is lightened until it does. A test enforces it.
 - Assigned, never chosen. Variation is derived from facts the app already has, so there is no customization UI and nothing to game by picking:
   - time of day and season from the EXIF capture time (a golden-hour photo gets a warm texture)
   - camera or lens from EXIF (a Fuji body gets its own look)
@@ -240,3 +240,5 @@ What gets replaced:
 - [ ] Name conflict check on "One of One" before the app store listing; "1/1" is also common edition jargon in art and NFT circles, so check the mark too.
 
 Decided Oct 21, 2026: the map is gone and Guide takes its tab slot in phase two; the board stays a 3-across grid of square crops, the only cropped view in the product; precision is Area / City on every card, no Exact; the intro is assigned, not picked; no guide tag in v1; each public card gets the next number, even a second card by the same person; a photo that matches nothing gets a blank place line with a hint; the border variation is an option on prints (Plain / Border); directions open the platform's maps app; web first, with the card renderer as a standalone package a native app can reuse; the owner's phone draws the card PNG and the server stores it, with no server rendering.
+
+Decided Oct 22, 2026: the border covers the whole mat, the white around the photo and the caption strip, and never the photo. Until then foil, wear and the sheen sat on a band two units wide at the card's edge, which was invisible at phone size. "Caption contrast is never reduced" became the contrast floor in Card variation.
