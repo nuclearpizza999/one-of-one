@@ -6,7 +6,7 @@ import {
   fmtCoords,
   fmtDate,
   renderPng,
-  seedFromPhoto,
+  variationSeed,
   type IntroId,
   type LineKind,
 } from "@one-of-one/card";
@@ -134,7 +134,7 @@ export function MakeScreen() {
     placeMatchRef.current = match;
     setPhoto({ file, src, width: img.naturalWidth, height: img.naturalHeight, element: img });
     setCaption(caption);
-    setIntro(assignIntro(seedFromPhoto(file.size, img.naturalWidth, img.naturalHeight)).id);
+    setIntro(assignIntro(variationSeed({ sizeBytes: file.size, width: img.naturalWidth, height: img.naturalHeight, takenAtMs: meta.takenAt?.getTime() ?? null, camera: null })).id);
     setReplayKey((k) => k + 1);
     setStatus(statusFor({ gps: meta.gps !== null, dateSource: meta.dateSource, match: match?.kind ?? null, lookupFailed }));
   }

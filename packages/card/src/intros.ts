@@ -16,21 +16,6 @@ export const INTROS: readonly Intro[] = [
   { id: "flip", label: "Flip", numberAt: 1500, total: 2000 },
 ];
 
-/**
- * Placeholder seed until step 2's variation seed exists: FNV-1a over the
- * photo's byte size and pixel dimensions, so the same photo always gets
- * the same intro.
- */
-export function seedFromPhoto(sizeBytes: number, width: number, height: number): number {
-  const input = `${sizeBytes}:${width}:${height}`;
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash >>> 0;
-}
-
 export function assignIntro(seed: number): Intro {
   // >>> 0 coerces any number, including NaN and non-integers, to an unsigned 32-bit index.
   return INTROS[(seed >>> 0) % INTROS.length]!;

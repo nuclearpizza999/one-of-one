@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INTROS, assignIntro, seedFromPhoto } from "../src/intros";
+import { INTROS, assignIntro } from "../src/intros";
 
 describe("INTROS registry", () => {
   it("lists rise, develop and flip with the prototype's timings", () => {
@@ -11,23 +11,6 @@ describe("INTROS registry", () => {
   });
   it("counts up before it settles", () => {
     for (const i of INTROS) expect(i.numberAt).toBeLessThan(i.total);
-  });
-});
-
-describe("seedFromPhoto", () => {
-  it("is deterministic", () => {
-    expect(seedFromPhoto(123456, 3024, 4032)).toBe(seedFromPhoto(123456, 3024, 4032));
-  });
-  it("is a 32-bit unsigned integer", () => {
-    const s = seedFromPhoto(1, 1, 1);
-    expect(Number.isInteger(s)).toBe(true);
-    expect(s).toBeGreaterThanOrEqual(0);
-    expect(s).toBeLessThan(2 ** 32);
-  });
-  it("changes when any input changes", () => {
-    const base = seedFromPhoto(123456, 3024, 4032);
-    expect(seedFromPhoto(123457, 3024, 4032)).not.toBe(base);
-    expect(seedFromPhoto(123456, 4032, 3024)).not.toBe(base);
   });
 });
 
@@ -45,7 +28,7 @@ describe("assignIntro", () => {
     expect(assignIntro(-1).id).toBe("rise");
   });
   it("gives the same intro for the same seed", () => {
-    const seed = seedFromPhoto(99, 900, 1200);
+    const seed = 0x9e3779b9;
     expect(assignIntro(seed)).toBe(assignIntro(seed));
   });
 });
