@@ -102,6 +102,11 @@ describe("resolvePlace tiers with a tiny world", () => {
     const m = await resolvePlace(0.001, 0, p, tiny);
     expect(m!.kind).toBe("landmark");
   });
+  it("a provider that throws synchronously falls through", async () => {
+    const p = { venueNear: () => { throw new Error("boom"); }, neighborhoodAt: async () => null } as unknown as PlaceProvider;
+    const m = await resolvePlace(0.001, 0, p, tiny);
+    expect(m!.kind).toBe("landmark");
+  });
   it("a rejecting neighborhood provider falls through to the city", async () => {
     const p: PlaceProvider = { venueNear: async () => null, neighborhoodAt: () => Promise.reject(new Error("outage")) };
     const m = await resolvePlace(0.006, 0, p, tiny);

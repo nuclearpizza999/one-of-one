@@ -171,8 +171,7 @@
   to { opacity: 1; }
 }
 
-.oo-intro-develop /* Never set image-orientation here: both painters rely on the browser applying EXIF orientation, and the rotated e2e fixture guards it. */
-.oo-photo {
+.oo-intro-develop .oo-photo {
   filter: brightness(2.4) contrast(0.15) saturate(0);
   animation: oo-develop 2.6s cubic-bezier(0.3, 0, 0.1, 1) 0.2s forwards;
 }

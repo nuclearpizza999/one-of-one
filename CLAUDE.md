@@ -29,7 +29,7 @@ npm run fixtures                         regenerate apps/web/public/dev/* (PNG f
 ## Where things are
 
 - `packages/card` is the renderer, with no app imports. `layout.ts` is the single source of card geometry; `Card.tsx` paints it in DOM and `renderPng.ts` paints it on canvas. Fonts ship in `fonts/` and are declared in `src/card.css`.
-- `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place` (a JSON body, so coordinates never enter a URL or an access log), so EXIF coordinates never leave our server.
+- `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place`, with the coordinates in a JSON body, so they never enter a URL, an access log, or any server but ours.
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
 - Build order from SPEC.md: step 1 (renderer and shell) and step 3 (metadata) are done. Next is step 2 (variation), then step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
 

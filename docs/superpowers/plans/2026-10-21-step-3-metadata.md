@@ -42,7 +42,7 @@ apps/web/public/dev/{seoul,nogps,rotated}.jpg
 apps/web/vitest.config.mts                  Vitest for apps/web/lib
 apps/web/lib/exif.ts + exif.test.ts        readPhotoMetadata
 apps/web/lib/status.ts + status.test.ts    statusFor (the status sentence)
-apps/web/app/api/place/route.ts            GET /api/place
+apps/web/app/api/place/route.ts            POST /api/place
 apps/web/app/make/MakeScreen.tsx           wiring (modified)
 e2e/place.spec.ts                          route tests
 e2e/make.spec.ts                           updated and extended

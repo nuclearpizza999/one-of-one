@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CITIES, LANDMARKS } from "../src/data";
+import { placeKey, placeLabel } from "../src/resolve";
 
 describe("landmarks", () => {
   it("has the prototype's 28 landmarks with finite coordinates and sane radii", () => {
@@ -31,7 +32,7 @@ describe("cities", () => {
     expect(CITIES[0]).toEqual(["Shanghai", "China", 31.222, 121.458]);
   });
   it("city keys are unique", () => {
-    expect(new Set(CITIES.map(([n, r, la, ln]) => `${n}, ${r}@${la},${ln}`)).size).toBe(CITIES.length);
+    expect(new Set(CITIES.map(([n, r, la, ln]) => placeKey("city", placeLabel(n, r), la, ln))).size).toBe(CITIES.length);
   });
   it("carries US cities with their state as the region", () => {
     expect(CITIES.find(([name, region]) => name === "San Francisco" && region === "California")).toBeDefined();

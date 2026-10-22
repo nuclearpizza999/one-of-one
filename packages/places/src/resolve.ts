@@ -55,6 +55,14 @@ function match(kind: PlaceKind, name: string, region: string, lat: number, lng: 
   return { kind, name, region, label, key: placeKey(kind, label, lat, lng), lat, lng, distanceM: d };
 }
 
+async function safely<T>(call: () => Promise<T | null>): Promise<T | null> {
+  try {
+    return await call();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * SPEC.md's place hierarchy, top-down, first hit wins:
  * venue (provider, 75 m) → landmark (own radius) → neighborhood (provider) → city (60 km) → null.
@@ -65,7 +73,7 @@ export async function resolvePlace(
   provider: PlaceProvider = noProvider,
   data: PlaceData = DEFAULT_DATA,
 ): Promise<PlaceMatch | null> {
-  const venue = await provider.venueNear(lat, lng, VENUE_RADIUS_M).catch(() => null);
+  const venue = await safely(() => provider.venueNear(lat, lng, VENUE_RADIUS_M));
   if (venue) return venue;
 
   for (const l of data.landmarks) {
@@ -73,7 +81,7 @@ export async function resolvePlace(
     if (d <= l.radiusM) return match("landmark", l.name, l.region, l.lat, l.lng, d);
   }
 
-  const hood = await provider.neighborhoodAt(lat, lng).catch(() => null);
+  const hood = await safely(() => provider.neighborhoodAt(lat, lng));
   if (hood) return hood;
 
   let best: City | null = null;

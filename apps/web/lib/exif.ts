@@ -13,12 +13,12 @@ export interface PhotoMetadata {
   gps: { lat: number; lng: number } | null;
 }
 
-/** A capture date we are willing to print: a real Date between 1970 and a day from now. Unset camera clocks produce 1899. */
+/** A capture date we are willing to print: a real Date between 1970 and two days from now. Unset camera clocks produce 1899. */
 export function plausibleDate(value: unknown, now = Date.now()): Date | null {
   if (!(value instanceof Date)) return null;
   const t = value.getTime();
   if (Number.isNaN(t)) return null;
-  if (value.getFullYear() < 1970 || t > now + 24 * 60 * 60 * 1000) return null;
+  if (value.getFullYear() < 1970 || t > now + 48 * 60 * 60 * 1000) return null;
   return value;
 }
 
