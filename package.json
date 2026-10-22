@@ -16,7 +16,11 @@
     "test:e2e": "playwright test",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",
-    "fixtures": "node e2e/fixtures/make-fixtures.mjs && node e2e/fixtures/make-exif-fixtures.mjs"
+    "fixtures": "node e2e/fixtures/make-fixtures.mjs && node e2e/fixtures/make-exif-fixtures.mjs",
+    "supabase:start": "supabase start -x studio,imgproxy,logflare,vector,realtime,edge-runtime",
+    "supabase:reset": "supabase db reset",
+    "supabase:env": "node scripts/supabase-env.mjs",
+    "supabase:test": "supabase test db"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

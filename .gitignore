@@ -14,6 +14,9 @@ build/
 .env
 .env.*
 !.env.example
+supabase/.temp/
+supabase/.branches/
+e2e/.auth/
 
 # logs
 *.log

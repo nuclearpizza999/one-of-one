@@ -25,6 +25,10 @@ npm run lint                             ESLint (Next config) in apps/web
 npm run typecheck                        tsc for e2e, packages/card, packages/places and apps/web
 npm run fixtures                         regenerate apps/web/public/dev/* (PNG fixtures, then EXIF JPEG fixtures)
 npm run check:prod                       production build, then prove /dev/*, /api/dev/* and the Make dev panel are absent
+npm run supabase:start                   local Supabase stack (needs Docker): API :54321, Postgres :54322, Mailpit :54324
+npm run supabase:env                     write apps/web/.env.local from the running local stack
+npm run supabase:reset                   reapply supabase/migrations to the local stack
+npm run supabase:test                    pgTAP tests in supabase/tests against the local stack
 ```
 
 `e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring.
@@ -34,6 +38,7 @@ npm run check:prod                       production build, then prove /dev/*, /a
 - `packages/card` is the renderer, with no app imports. `layout.ts` is the single source of card geometry; `Card.tsx` paints it in DOM and `renderPng.ts` paints it on canvas. Fonts ship in `fonts/` and are declared in `src/card.css`.
 - `packages/places` is place resolution, no app imports: `data/` holds the prototype's 28 landmarks and 10,379 cities as JSON (regenerate with `npm run extract -w packages/places`); `resolvePlace()` runs SPEC.md's tiers; venue and neighborhood go through the `PlaceProvider` interface, stubbed until a places API is wired. The app calls it only through `POST /api/place`, with the coordinates in a JSON body, so they never enter a URL, an access log, or any server but ours.
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
+- `supabase/` holds the schema (`migrations/`), the local stack's settings and the sign-in email template; `supabase test db` runs the pgTAP files in `supabase/tests/`.
 - Development-only surfaces, absent from production builds: the variation panel under the card on Make (switch intro, texture, tone, tier, motion, border on print), `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
 - Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata) and 2 (variation) are done. Next is step 4 (accounts and the board). Decisions and plans so far are under `docs/superpowers/`.
 
