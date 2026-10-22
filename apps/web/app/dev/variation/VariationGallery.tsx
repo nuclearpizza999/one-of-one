@@ -1,5 +1,6 @@
 "use client";
 
+import "@/components/dev.css";
 import { Card, TEXTURES, TIERS, TONES, type Tier, type Tone, withOverrides } from "@one-of-one/card";
 import { type ChangeEvent, useEffect, useState } from "react";
 import { Strip } from "@/components/Strip";

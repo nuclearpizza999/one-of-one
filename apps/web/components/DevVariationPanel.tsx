@@ -1,5 +1,6 @@
 "use client";
 
+import "./dev.css";
 import { INTROS, MOTIONS, TEXTURES, TIERS, TONES, type Variation, type VariationOverrides } from "@one-of-one/card";
 import { Strip } from "@/components/Strip";
 

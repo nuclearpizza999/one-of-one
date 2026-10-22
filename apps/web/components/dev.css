@@ -1,0 +1,67 @@
+/* Development-only variation panel on Make. Never rendered in production builds. */
+.dev-panel {
+  margin: 24px 20px 0;
+  padding-top: 14px;
+  border-top: 1px dashed var(--muted);
+}
+.dev-field {
+  margin-top: 10px;
+}
+.dev-field .label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dev-panel .strip-cell {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 0 2px;
+}
+
+/* Development-only variation gallery. */
+.gallery {
+  padding: 16px 20px 40px;
+}
+.gallery-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 20px;
+  max-width: 430px;
+}
+.gallery-pick {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.gallery-row {
+  margin-top: 18px;
+}
+.gallery-cards {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.gallery-cell {
+  margin: 0;
+  flex: 0 0 auto;
+  padding-bottom: 6px;
+  border-bottom: 1px solid transparent;
+}
+.gallery-cell[data-derived="true"] {
+  border-bottom-color: var(--ink);
+}
+.gallery-cell .label {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}

@@ -1,8 +1,12 @@
 import { TEXTURES, TIERS, type Texture, type Tier } from "@one-of-one/card";
+import nextDynamic from "next/dynamic";
 import { notFound } from "next/navigation";
-import { DevCard, type Fixture } from "./DevCard";
+import type { Fixture } from "./DevCard";
 
 export const dynamic = "force-dynamic";
+
+const DevCard =
+  process.env.NODE_ENV === "production" ? null : nextDynamic(() => import("./DevCard").then((m) => m.DevCard));
 
 const FIXTURES: readonly Fixture[] = ["portrait", "landscape", "square"];
 
@@ -11,7 +15,7 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /** Dev-only: renders the DOM card and the PNG side by side for e2e/equivalence.spec.ts. */
 export default async function DevCardPage({ searchParams }: { searchParams: Promise<Query> }) {
-  if (process.env.NODE_ENV === "production") notFound();
+  if (process.env.NODE_ENV === "production" || !DevCard) notFound();
   const q = await searchParams;
   const fixture = FIXTURES.find((f) => f === one(q.fixture)) ?? "portrait";
   const parsed = Number.parseInt(one(q.number) ?? "", 10);

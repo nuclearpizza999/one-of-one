@@ -4,10 +4,11 @@
 import { spawn } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const port = 3100;
 const base = `http://localhost:${port}`;
-const markers = ["data-dev-panel", "Variation testing (development only)"];
+const MARKERS = ["data-dev-panel", "Variation testing (development only)", "data-dev-gallery", "drift-border", ".dev-panel", ".gallery-cell", "/api/dev/photos"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForServer() {
@@ -25,14 +26,14 @@ async function waitForServer() {
 const failures = [];
 const check = (ok, message) => { if (!ok) failures.push(message); };
 
-// Lazy chunks are not referenced by /make, so scan every built script on disk.
-const staticDir = "apps/web/.next/static";
-const chunks = readdirSync(staticDir, { recursive: true }).filter((f) => String(f).endsWith(".js"));
-check(chunks.length > 0, `no .js files found under ${staticDir}`);
-for (const f of chunks) {
+// Lazy chunks are not referenced by /make, so scan every built script and stylesheet on disk.
+const staticDir = fileURLToPath(new URL("../apps/web/.next/static", import.meta.url));
+const built = readdirSync(staticDir, { recursive: true }).filter((f) => /\.(js|css)$/.test(String(f)));
+check(built.length > 0, `no .js or .css files found under ${staticDir}`);
+for (const f of built) {
   const file = join(staticDir, String(f));
-  const js = readFileSync(file, "utf8");
-  if (markers.some((m) => js.includes(m))) failures.push(`${file} contains dev panel code`);
+  const text = readFileSync(file, "utf8");
+  for (const m of MARKERS) if (text.includes(m)) failures.push(`${file} contains dev marker ${JSON.stringify(m)}`);
 }
 
 let server;
@@ -49,7 +50,16 @@ try {
     process.exit(1);
   }
   server = spawn("npm", ["run", "start", "-w", "apps/web", "--", "--port", String(port)], { stdio: "ignore", detached: true });
-  await waitForServer();
+  const exited = new Promise((resolve) => {
+    server.on("exit", (code) => {
+      failures.push(`production server exited early (code ${code})`);
+      resolve();
+    });
+  });
+  let died = false;
+  exited.then(() => { died = true; });
+  await Promise.race([waitForServer(), exited]);
+  if (died) throw new Error("the production server exited before it was ready");
   for (const p of ["/dev/variation", "/dev/card", "/api/dev/photos", "/api/dev/photos/seoul.jpg"]) {
     const r = await fetch(`${base}${p}`);
     check(r.status === 404, `${p} should be 404 in production, got ${r.status}`);
@@ -62,8 +72,10 @@ try {
   check(scripts.length > 0, "no scripts found on /make");
   for (const src of scripts) {
     const js = await (await fetch(src.startsWith("http") ? src : `${base}${src}`)).text();
-    check(!js.includes("data-dev-panel") && !js.includes("Variation testing (development only)"), `${src} contains dev panel code`);
+    for (const m of MARKERS) check(!js.includes(m), `${src} contains dev marker ${JSON.stringify(m)}`);
   }
+} catch (e) {
+  failures.push(String(e.message ?? e));
 } finally {
   if (server) {
     try {
