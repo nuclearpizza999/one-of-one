@@ -48,6 +48,11 @@ for (const fixture of FIXTURES) {
   }
 }
 
+// What these two cases prove: the whole-card ratio catches geometry drift of one unit of
+// card width, and shows a long place line and a multi-digit number render without gross
+// divergence (no wrapped line, no clipped or misplaced number). It cannot resolve a
+// single-glyph shift: figure spacing (tabular vs proportional digits) and the exact
+// ellipsis cut are below its tolerance. A direct width probe is the tool for those.
 const MULTI_DIGIT_CASES = [
   ["portrait-number11", "fixture=portrait&coords=1&number=11"],
   ["portrait-long-place-number1111", "fixture=portrait&coords=1&number=1111&place=long"],

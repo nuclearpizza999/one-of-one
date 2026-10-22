@@ -38,6 +38,12 @@ describe("assignIntro", () => {
     expect(assignIntro(2).id).toBe("flip");
     expect(assignIntro(3).id).toBe("rise");
   });
+  it("coerces NaN and negative seeds to a valid index", () => {
+    // NaN >>> 0 is 0, so NaN maps to index 0 ("rise").
+    // -1 >>> 0 is 4294967295, and 4294967295 % 3 is 0, so -1 also maps to index 0 ("rise").
+    expect(assignIntro(NaN).id).toBe("rise");
+    expect(assignIntro(-1).id).toBe("rise");
+  });
   it("gives the same intro for the same seed", () => {
     const seed = seedFromPhoto(99, 900, 1200);
     expect(assignIntro(seed)).toBe(assignIntro(seed));

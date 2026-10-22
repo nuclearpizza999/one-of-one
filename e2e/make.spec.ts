@@ -72,6 +72,19 @@ test("prints the caption that is being typed, without pressing Enter", async ({ 
   await expect(place).toHaveText("Seoul, South Korea");
 });
 
+test("prints the caption being typed when the click does not move focus", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(portrait);
+  await expect(page.locator("img.oo-photo")).toBeVisible();
+  const place = page.locator(".oo-line-place");
+  await place.click();
+  await page.keyboard.type("Seoul, South Korea");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Print" }).dispatchEvent("click");
+  expect((await download).suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
+  await expect(place).toHaveText("Seoul, South Korea");
+});
+
 test("an unreadable file gets a plain status line", async ({ page }) => {
   await page.goto("/make");
   await page.getByTestId("photo-input").setInputFiles({
