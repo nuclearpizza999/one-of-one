@@ -41,9 +41,19 @@ describe("readPhotoMetadata", () => {
     expect(m.gps?.lat).toBeCloseTo(37.5563, 3);
   });
 
+  it("reads the camera make and model", async () => {
+    expect((await readPhotoMetadata(fixture("seoul.jpg"))).camera).toEqual({ make: "Apple", model: "iPhone 15 Pro" });
+    expect((await readPhotoMetadata(fixture("nogps.jpg"))).camera).toEqual({ make: "FUJIFILM", model: "X100VI" });
+    expect((await readPhotoMetadata(fixture("rotated.jpg"))).camera).toEqual({ make: "Apple", model: "iPhone 15 Pro" });
+  });
+
+  it("has no camera when the photo carries none", async () => {
+    expect((await readPhotoMetadata(fixture("portrait.png"))).camera).toBeNull();
+  });
+
   it("returns nulls for a PNG with no EXIF", async () => {
     const m = await readPhotoMetadata(fixture("portrait.png"));
-    expect(m).toEqual({ takenAt: null, dateSource: "none", gps: null });
+    expect(m).toEqual({ takenAt: null, dateSource: "none", gps: null, camera: null });
   });
 
   it("falls back to the file's modification time when there is no EXIF date", async () => {
@@ -62,7 +72,7 @@ describe("readPhotoMetadata", () => {
 
   it("never throws on garbage", async () => {
     const m = await readPhotoMetadata(new Uint8Array([1, 2, 3, 4]));
-    expect(m).toEqual({ takenAt: null, dateSource: "none", gps: null });
+    expect(m).toEqual({ takenAt: null, dateSource: "none", gps: null, camera: null });
   });
 
   it("falls back to CreateDate when DateTimeOriginal is an unset clock", async () => {

@@ -12,6 +12,8 @@ mkdirSync(out, { recursive: true });
 // EXIF dates are wall-clock at capture with no zone.
 const DATE = "2026:07:01 14:30:00";
 const SEOUL = { lat: 37.5563, lng: 126.9236 };
+const APPLE = { make: "Apple", model: "iPhone 15 Pro" };
+const FUJI = { make: "FUJIFILM", model: "X100VI" };
 
 function gpsIfd({ lat, lng }) {
   return {
@@ -32,9 +34,13 @@ async function renderJpeg(page, w, h, rgb) {
   return page.screenshot({ type: "jpeg", quality: 90 });
 }
 
-function withExif(jpegBuffer, { orientation, date, gps }) {
+function withExif(jpegBuffer, { orientation, date, gps, camera }) {
   const exif = { "0th": {}, Exif: {} };
   if (orientation) exif["0th"][piexif.ImageIFD.Orientation] = orientation;
+  if (camera) {
+    exif["0th"][piexif.ImageIFD.Make] = camera.make;
+    exif["0th"][piexif.ImageIFD.Model] = camera.model;
+  }
   if (date) exif.Exif[piexif.ExifIFD.DateTimeOriginal] = date;
   if (gps) exif.GPS = gpsIfd(gps);
   const bytes = piexif.dump(exif);
@@ -44,10 +50,10 @@ function withExif(jpegBuffer, { orientation, date, gps }) {
 const browser = await chromium.launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 const fixtures = [
-  { name: "seoul", w: 900, h: 1200, rgb: [96, 120, 160], exif: { date: DATE, gps: SEOUL } },
-  { name: "nogps", w: 900, h: 1200, rgb: [160, 110, 110], exif: { date: DATE } },
+  { name: "seoul", w: 900, h: 1200, rgb: [96, 120, 160], exif: { date: DATE, gps: SEOUL, camera: APPLE } },
+  { name: "nogps", w: 900, h: 1200, rgb: [160, 110, 110], exif: { date: DATE, camera: FUJI } },
   // Stored landscape with Orientation 6 (rotate 90° clockwise to display): shows as 900 × 1200 portrait.
-  { name: "rotated", w: 1200, h: 900, rgb: [110, 150, 110], exif: { date: DATE, gps: SEOUL, orientation: 6 } },
+  { name: "rotated", w: 1200, h: 900, rgb: [110, 150, 110], exif: { date: DATE, gps: SEOUL, orientation: 6, camera: APPLE } },
 ];
 for (const f of fixtures) {
   const jpeg = await renderJpeg(page, f.w, f.h, f.rgb);

@@ -11,6 +11,8 @@ export interface PhotoMetadata {
   takenAt: Date | null;
   dateSource: DateSource;
   gps: { lat: number; lng: number } | null;
+  /** EXIF Make and Model, trimmed; null unless both are present. */
+  camera: { make: string; model: string } | null;
 }
 
 /** A capture date we are willing to print: a real Date between 1970 and two days from now. Unset camera clocks produce 1899. */
@@ -30,16 +32,20 @@ export async function readPhotoMetadata(
   let takenAt: Date | null = null;
   let dateSource: DateSource = "none";
   let gps: PhotoMetadata["gps"] = null;
+  let camera: PhotoMetadata["camera"] = null;
 
   try {
-    const out = await parse(input, { tiff: true, exif: true, pick: ["DateTimeOriginal", "CreateDate"] });
+    const out = await parse(input, { tiff: true, exif: true, pick: ["DateTimeOriginal", "CreateDate", "Make", "Model"] });
     const d = plausibleDate(out?.DateTimeOriginal) ?? plausibleDate(out?.CreateDate);
     if (d) {
       takenAt = d;
       dateSource = "exif";
     }
+    const make = typeof out?.Make === "string" ? out.Make.trim() : "";
+    const model = typeof out?.Model === "string" ? out.Model.trim() : "";
+    if (make && model) camera = { make, model };
   } catch {
-    // No usable EXIF date.
+    // No usable EXIF date or camera.
   }
 
   try {
@@ -56,5 +62,5 @@ export async function readPhotoMetadata(
     dateSource = "file";
   }
 
-  return { takenAt, dateSource, gps };
+  return { takenAt, dateSource, gps, camera };
 }
