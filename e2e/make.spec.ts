@@ -52,10 +52,24 @@ test("replay restarts the intro", async ({ page }) => {
   const frame = page.locator(".oo-frame");
   await expect(frame).toHaveClass(/oo-intro-/);
   const before = await frame.evaluate((el) => el.getAnimations({ subtree: true }).map((a) => a.startTime));
+  expect(before.length).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Replay intro" }).click();
   await expect
     .poll(() => frame.evaluate((el) => el.getAnimations({ subtree: true }).map((a) => a.startTime)))
     .not.toEqual(before);
+});
+
+test("prints the caption that is being typed, without pressing Enter", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(portrait);
+  await expect(page.locator("img.oo-photo")).toBeVisible();
+  const place = page.locator(".oo-line-place");
+  await place.click();
+  await page.keyboard.type("Seoul, South Korea");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Print" }).click();
+  expect((await download).suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
+  await expect(place).toHaveText("Seoul, South Korea");
 });
 
 test("an unreadable file gets a plain status line", async ({ page }) => {

@@ -51,6 +51,8 @@ export function MakeScreen() {
   const [replayKey, setReplayKey] = useState(0);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  // Caption edits commit on blur; print reads the committed text from here, not from state.
+  const captionRef = useRef({ place: "", date: "", coords: "" });
 
   // Release the previous photo's object URL when it is replaced or the screen unmounts.
   useEffect(() => {
@@ -73,16 +75,24 @@ export function MakeScreen() {
       setStatus("This photo format can't be shown here. Try a JPEG or PNG.");
       return;
     }
+    if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+      URL.revokeObjectURL(src);
+      setStatus("This photo format can't be shown here. Try a JPEG or PNG.");
+      return;
+    }
+    const initialDate = file.lastModified ? fmtDate(new Date(file.lastModified)) : "";
+    captionRef.current = { place: "", date: initialDate, coords: "" };
     setPhoto({ file, src, width: img.naturalWidth, height: img.naturalHeight, element: img });
     setPlace("");
     setCoords("");
-    setDate(file.lastModified ? fmtDate(new Date(file.lastModified)) : "");
+    setDate(initialDate);
     setIntro(assignIntro(seedFromPhoto(file.size, img.naturalWidth, img.naturalHeight)).id);
     setReplayKey((k) => k + 1);
     setStatus("The date is the file's. Tap the caption lines to type the place and fix the date.");
   }
 
   function onCaptionChange(field: LineKind, text: string) {
+    captionRef.current = { ...captionRef.current, [field]: text };
     if (field === "place") setPlace(text);
     else if (field === "date") setDate(text);
     else setCoords(text);
@@ -90,6 +100,10 @@ export function MakeScreen() {
 
   async function onPrint() {
     if (!photo || busy) return;
+    // Commit a line that is still being edited; its blur handler updates captionRef synchronously.
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.classList.contains("oo-line")) active.blur();
+    const { place: placeText, date: dateText, coords: coordsText } = captionRef.current;
     setBusy(true);
     setStatus("Rendering the print…");
     try {
@@ -97,33 +111,42 @@ export function MakeScreen() {
         image: photo.element,
         naturalWidth: photo.width,
         naturalHeight: photo.height,
-        place,
-        date,
-        coords,
+        place: placeText,
+        date: dateText,
+        coords: coordsText,
         number: null,
       });
-      const name = `one-of-one-${slug(place)}.png`;
+      const name = `one-of-one-${slug(placeText)}.png`;
       const file = new File([r.blob], name, { type: "image/png" });
       const notes = [
         r.fontsLoaded ? "" : "Printed with a fallback font.",
         r.reduced ? "Saved at a smaller size than full print resolution." : "",
       ].filter(Boolean);
 
+      const download = (blob: Blob, fileName: string) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        setStatus(["Print saved.", ...notes].join(" "));
+      };
+
+      let shared = false;
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file] });
           setStatus(["Print shared.", ...notes].join(" "));
+          shared = true;
         } catch (err) {
-          setStatus(err instanceof Error && err.name === "AbortError" ? "Share cancelled." : "Couldn't share the print.");
+          if (err instanceof Error && err.name === "AbortError") {
+            setStatus(["Share cancelled.", ...notes].join(" "));
+            shared = true;
+          }
+          // Any other failure falls through to the download below.
         }
-      } else {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(r.blob);
-        a.download = name;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        setStatus(["Print saved.", ...notes].join(" "));
       }
+      if (!shared) download(r.blob, name);
     } catch {
       setStatus("Couldn't render the print. Try another photo.");
     } finally {
