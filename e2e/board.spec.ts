@@ -76,4 +76,38 @@ test.describe("rows of whole photos", () => {
       if (!isLast) expect(Math.abs(rightEdge - (board!.x + board!.width - 2))).toBeLessThan(2);
     }
   });
+
+  test("the middle scrolls while the top bar and the tab bar stay put", async ({ page }) => {
+    await signIn(page, freshEmail());
+    const fixtures = ["portrait.png", "landscape.png", "square.png", "seoul.jpg", "rotated.jpg"];
+    for (const f of [...fixtures, ...fixtures]) {
+      await page.goto("/make");
+      await page.getByTestId("photo-input").setInputFiles(path.resolve("apps/web/public/dev", f));
+      await expect(page.locator("img.oo-photo")).toBeVisible();
+      await page.getByRole("button", { name: "Add to board" }).click();
+      await expect(page).toHaveURL(/\/board$/);
+    }
+    await expect(page.getByLabel("10 cards")).toHaveText("10");
+    // Ten cards make a board about 630px tall, which fits in 844; shorten the screen so the middle has something to scroll.
+    await page.setViewportSize({ width: 390, height: 360 });
+
+    const main = page.locator(".app-main");
+    const tabbar = page.getByRole("navigation", { name: "Tabs" });
+    const topbar = page.locator(".topbar");
+    const firstTile = page.locator(".board .tile").first();
+
+    // The page itself has nothing to scroll; the middle does.
+    expect(await page.evaluate(() => document.scrollingElement!.scrollHeight - document.scrollingElement!.clientHeight)).toBeLessThanOrEqual(1);
+    expect(await main.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(200);
+
+    const before = { tab: (await tabbar.boundingBox())!.y, top: (await topbar.boundingBox())!.y, tile: (await firstTile.boundingBox())!.y };
+    expect(before.tab + (await tabbar.boundingBox())!.height).toBeLessThanOrEqual(360);
+
+    await main.evaluate((el) => { el.scrollTop = 400; });
+    await page.waitForTimeout(100);
+
+    expect((await tabbar.boundingBox())!.y).toBe(before.tab);
+    expect((await topbar.boundingBox())!.y).toBe(before.top);
+    expect((await firstTile.boundingBox())!.y).toBeLessThan(before.tile - 300);
+  });
 });

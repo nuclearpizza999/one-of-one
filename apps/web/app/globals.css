@@ -47,22 +47,29 @@ button:disabled {
 }
 
 /* Frame: one phone-width column. */
+/* Frame: one phone-width column, exactly one screen tall. Only the middle scrolls; the bars stay put. */
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   max-width: 430px;
   margin: 0 auto;
   padding-top: env(safe-area-inset-top, 0px);
 }
 .app-main {
   flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 /* Top bar: 48px, wordmark left, one 44px target right. */
 .topbar {
+  flex-shrink: 0;
   height: 48px;
   box-sizing: border-box;
   display: flex;
@@ -91,6 +98,7 @@ button:disabled {
 
 /* Tab bar: 84px, three 48 × 44 slots, the middle one empty. */
 .tabbar {
+  flex-shrink: 0;
   margin-top: auto;
   height: 84px;
   box-sizing: border-box;
