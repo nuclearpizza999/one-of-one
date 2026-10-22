@@ -37,12 +37,12 @@ const image = {} as CanvasImageSource;
 describe("printDimensions", () => {
   it("uses the native width below the cap", () => {
     expect(printDimensions(900, 1200)).toEqual({
-      photoW: 900, photoH: 1200, scale: 1, W: 1000, u: 10, H: 1442,
+      photoW: 900, photoH: 1200, scale: 1, W: 1000, u: 10, H: 1410,
     });
   });
   it("caps the photo at 4800 px wide and scales the height", () => {
     expect(printDimensions(6000, 4000)).toEqual({
-      photoW: 4800, photoH: 3200, scale: 0.8, W: 5333, u: 53.33, H: 4491,
+      photoW: 4800, photoH: 3200, scale: 0.8, W: 5333, u: 53.33, H: 4320,
     });
   });
   it("accepts a smaller cap", () => {
@@ -71,14 +71,15 @@ describe("drawCard", () => {
     number: 3,
   };
   const dims = printDimensions(900, 1200);
-  const fs = 34;
-  const lastBaseline = 1442 - 36 - fs * CARD.baselineFromBottom;
-  const lineHeight = fs * 1.32;
+  const fs = 30;
+  // Baselines are measured from the top: the strip starts at 125 units, the first line box at CARD.gap below it.
+  const firstBaseline = (125 + CARD.gap) * 10 + fs * 1.2 - fs * CARD.baselineFromBottom;
+  const lineHeight = fs * 1.2;
 
   it("fills the mat white and draws the photo inside it", () => {
     const { ctx, calls } = fakeCtx();
     drawCard(ctx, image, dims, spec);
-    expect(calls[0]).toEqual(["fillRect", 0, 0, 1000, 1442, "#fff"]);
+    expect(calls[0]).toEqual(["fillRect", 0, 0, 1000, 1410, "#fff"]);
     expect(calls[1]).toEqual(["drawImage", image, 50, 50, 900, 1200]);
   });
 
@@ -87,7 +88,7 @@ describe("drawCard", () => {
     const border = { kind: "border" } as unknown as CanvasImageSource;
     drawCard(ctx, image, dims, spec, border);
     expect(calls[0]![0]).toBe("fillRect");
-    expect(calls[1]).toEqual(["drawImage", border, 0, 0, 1000, 1442]);
+    expect(calls[1]).toEqual(["drawImage", border, 0, 0, 1000, 1410]);
     expect(calls[2]).toEqual(["drawImage", image, 50, 50, 900, 1200]);
   });
 
@@ -97,16 +98,16 @@ describe("drawCard", () => {
     expect(calls.filter((c) => c[0] === "drawImage")).toHaveLength(1);
   });
 
-  it("draws each line at its baseline, bottom-aligned, in the right weight and color", () => {
+  it("draws each line at its baseline, hung from the photo, in the right weight and color", () => {
     const { ctx, calls } = fakeCtx();
     drawCard(ctx, image, dims, spec);
     const texts = calls.filter((c) => c[0] === "fillText");
     expect(texts).toHaveLength(4);
-    expect(texts[0]!.slice(1, 4)).toEqual(["Seoul, South Korea", 80, expect.closeTo(lastBaseline - 2 * lineHeight, 6)]);
-    expect(texts[0]!.slice(5)).toEqual(['600 34px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#111", "left"]);
-    expect(texts[1]!.slice(1, 4)).toEqual(["July 1st, 2026", 80, expect.closeTo(lastBaseline - lineHeight, 6)]);
-    expect(texts[2]!.slice(1, 4)).toEqual(["37.5563° N, 126.9236° E", 80, expect.closeTo(lastBaseline, 6)]);
-    expect(texts[2]!.slice(5)).toEqual(['400 34px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#333", "left"]);
+    expect(texts[0]!.slice(1, 4)).toEqual(["Seoul, South Korea", 80, expect.closeTo(firstBaseline, 6)]);
+    expect(texts[0]!.slice(5)).toEqual(['600 30px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#111", "left"]);
+    expect(texts[1]!.slice(1, 4)).toEqual(["July 1st, 2026", 80, expect.closeTo(firstBaseline + lineHeight, 6)]);
+    expect(texts[2]!.slice(1, 4)).toEqual(["37.5563° N, 126.9236° E", 80, expect.closeTo(firstBaseline + 2 * lineHeight, 6)]);
+    expect(texts[2]!.slice(5)).toEqual(['400 30px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#333", "left"]);
     expect(ctx.textBaseline).toBe("alphabetic");
   });
 
@@ -114,8 +115,8 @@ describe("drawCard", () => {
     const { ctx, calls } = fakeCtx();
     drawCard(ctx, image, dims, spec);
     const num = calls.filter((c) => c[0] === "fillText")[3]!;
-    expect(num.slice(1, 4)).toEqual(["#3", 920, expect.closeTo(lastBaseline, 6)]);
-    expect(num.slice(5)).toEqual(['600 34px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#111", "right"]);
+    expect(num.slice(1, 4)).toEqual(["#3", 920, expect.closeTo(firstBaseline + 2 * lineHeight, 6)]);
+    expect(num.slice(5)).toEqual(['600 30px "EB Garamond", Garamond, Georgia, "Times New Roman", serif', "#111", "right"]);
   });
 
   it("ellipsizes a long place line at 72% of the photo width", () => {
@@ -125,12 +126,13 @@ describe("drawCard", () => {
     expect(place[1]).toBe(`${"A".repeat(63)}…`);
   });
 
-  it("omits the number when null and keeps two lines bottom-aligned", () => {
+  it("omits the number when null and keeps two lines hung from the photo", () => {
     const { ctx, calls } = fakeCtx();
     drawCard(ctx, image, dims, { ...spec, coords: "", number: null });
     const texts = calls.filter((c) => c[0] === "fillText");
     expect(texts).toHaveLength(2);
-    expect(texts[1]!.slice(1, 4)).toEqual(["July 1st, 2026", 80, expect.closeTo(lastBaseline, 6)]);
+    expect(texts[0]!.slice(1, 4)).toEqual(["Seoul, South Korea", 80, expect.closeTo(firstBaseline, 6)]);
+    expect(texts[1]!.slice(1, 4)).toEqual(["July 1st, 2026", 80, expect.closeTo(firstBaseline + lineHeight, 6)]);
   });
 });
 
@@ -154,16 +156,16 @@ describe("renderPng", () => {
   it("returns a blob at full size when the canvas is allowed", async () => {
     const { createCanvas, made } = fakeCanvasFactory(10_000);
     const r = await renderPng({ ...spec, image, naturalWidth: 900, naturalHeight: 1200, createCanvas, toBlob });
-    expect(made).toEqual([{ w: 1000, h: 1442 }]);
-    expect(r).toMatchObject({ width: 1000, height: 1442, reduced: false, fontsLoaded: false });
+    expect(made).toEqual([{ w: 1000, h: 1410 }]);
+    expect(r).toMatchObject({ width: 1000, height: 1410, reduced: false, fontsLoaded: false });
     expect(r.blob.type).toBe("image/png");
   });
 
   it("retries at half the cap when the canvas cannot be made", async () => {
     const { createCanvas, made } = fakeCanvasFactory(3000);
     const r = await renderPng({ ...spec, image, naturalWidth: 6000, naturalHeight: 4000, createCanvas, toBlob });
-    expect(made).toEqual([{ w: 2667, h: 2245 }]);
-    expect(r).toMatchObject({ width: 2667, height: 2245, reduced: true });
+    expect(made).toEqual([{ w: 2667, h: 2160 }]);
+    expect(r).toMatchObject({ width: 2667, height: 2160, reduced: true });
   });
 
   it("loads the border SVG as a data URL and reports it drawn", async () => {

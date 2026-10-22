@@ -92,9 +92,10 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
         lastLine.appendChild(probe);
         const cardRect = card.getBoundingClientRect();
         const probeRect = probe.getBoundingClientRect();
+        const linesRect = card.querySelector<HTMLElement>(".oo-lines")!.getBoundingClientRect();
         probe.remove();
         const u = cardRect.width / 100;
-        setBaseline((cardRect.bottom - probeRect.bottom - CARD.bottom * u) / (CARD.fontSize * u));
+        setBaseline((linesRect.bottom - probeRect.bottom) / (CARD.fontSize * u));
       }
     })();
     return () => {
@@ -112,7 +113,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
 
   return (
     <div style={{ padding: 20, background: "#888" }}>
-      <style>{`.drift .oo-plate { padding-bottom: ${CARD.bottom + 1}cqw; } .drift-border .oo-border-img { transform: translateX(1cqw); }`}</style>
+      <style>{`.drift .oo-plate { padding-top: ${CARD.gap + 1}cqw; } .drift-border .oo-border-img { transform: translateX(1cqw); }`}</style>
       <div id="dom" className={[drift ? "drift" : null, driftBorder ? "drift-border" : null].filter(Boolean).join(" ") || undefined} style={{ width: 1000 }}>
         <Card
           photo={photo ? { src: photo.src, width: photo.width, height: photo.height } : null}

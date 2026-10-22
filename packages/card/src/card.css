@@ -107,15 +107,18 @@
   z-index: 1;
   box-sizing: border-box;
   height: var(--oo-strip);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 var(--oo-inset) var(--oo-bottom);
+  padding: var(--oo-gap) var(--oo-inset) 0;
   font-family: var(--oo-font);
   font-size: var(--oo-fs);
   font-weight: var(--oo-weight);
   line-height: var(--oo-lh);
   color: var(--oo-ink);
+}
+/* The lines and the number share a row aligned at the bottom, so the number sits on the last line's baseline. */
+.oo-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
 }
 .oo-lines {
   display: flex;

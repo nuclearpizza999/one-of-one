@@ -12,7 +12,7 @@ const base: Variation = {
   intro: "rise",
   seed: 12345,
 };
-const H = 144.2; // 900 × 1200 photo
+const H = 141; // 900 × 1200 photo
 
 const MAT_GROUP = /<g clip-path="url\(#mat\)">.*?<\/g>/gs;
 const stripSvg = (svg: string) =>
@@ -35,7 +35,7 @@ describe("mulberry32", () => {
 describe("borderSvg", () => {
   it("is an SVG in card units with the card's height", () => {
     const svg = borderSvg(base, H);
-    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 144.2"')).toBe(true);
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 141"')).toBe(true);
     expect(svg.endsWith("</svg>")).toBe(true);
   });
   it("draws everything inside the one mat clip group", () => {
@@ -64,13 +64,13 @@ describe("borderSvg", () => {
   });
   it("cuts the photo box out of the mat clip, which is the only clip", () => {
     const svg = borderSvg(base, H);
-    expect(svg).toContain('<clipPath id="mat"><path clip-rule="evenodd" d="M0 0H100V144.2H0Z M5 5h90v120h-90Z"/></clipPath>');
+    expect(svg).toContain('<clipPath id="mat"><path clip-rule="evenodd" d="M0 0H100V141H0Z M5 5h90v120h-90Z"/></clipPath>');
     expect(svg.match(/<clipPath/g)).toHaveLength(1);
   });
   it("fills the whole mat with foil for the foil texture", () => {
     const foil = borderSvg({ ...base, texture: "foil", tier: "foil" }, H);
     const [, matGroup] = foil.split('<g clip-path="url(#mat)">');
-    expect(matGroup).toContain('<rect x="0" y="0" width="100" height="144.2" fill="url(#foil-12345)"/>');
+    expect(matGroup).toContain('<rect x="0" y="0" width="100" height="141" fill="url(#foil-12345)"/>');
   });
   it("seeds the noise and is deterministic", () => {
     const svg = borderSvg(base, H);

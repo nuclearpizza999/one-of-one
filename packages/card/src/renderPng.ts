@@ -21,7 +21,7 @@ export function printDimensions(naturalW: number, naturalH: number, cap = PRINT_
   const photoH = Math.round(naturalH * scale);
   const W = Math.round(photoW / 0.9);
   const u = W / 100;
-  const H = Math.round(5 * u + photoH + 19.2 * u);
+  const H = Math.round(5 * u + photoH + 16 * u);
   return { photoW, photoH, scale, W, H, u };
 }
 
@@ -72,8 +72,8 @@ export function drawCard(
   const { photoW, photoH, W, H, u } = dims;
   const layout = layoutCard({ photoW, photoH, ...spec });
   const fs = layout.text.fontSize * u;
-  // Positions are measured up from the bottom edge so rounding in H never moves the caption.
-  const yFromBottom = (baselineY: number) => H - (layout.height - baselineY) * u;
+  // Positions are measured down from the top, like the DOM's, so the caption keeps its distance from the photo whatever rounding H gets.
+  const y = (baselineY: number) => baselineY * u;
 
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, W, H);
@@ -88,13 +88,13 @@ export function drawCard(
     ctx.textAlign = "left";
     const text =
       line.kind === "place" ? ellipsize(ctx, line.text, layout.text.placeMaxWidth * u) : line.text;
-    ctx.fillText(text, layout.text.left * u, yFromBottom(line.baselineY));
+    ctx.fillText(text, layout.text.left * u, y(line.baselineY));
   }
   if (layout.number) {
     ctx.font = cardFont(CARD.weight, fs);
     ctx.fillStyle = CARD.ink;
     ctx.textAlign = "right";
-    ctx.fillText(layout.number.text, layout.text.right * u, yFromBottom(layout.number.baselineY));
+    ctx.fillText(layout.number.text, layout.text.right * u, y(layout.number.baselineY));
   }
 }
 

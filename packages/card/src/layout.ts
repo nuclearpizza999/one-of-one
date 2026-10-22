@@ -7,11 +7,12 @@ export const CARD = {
   width: 100,
   mat: 5,
   photoWidth: 90,
-  stripHeight: 19.2,
-  fontSize: 3.4,
-  lineHeight: 1.32,
+  stripHeight: 16,
+  fontSize: 3,
+  lineHeight: 1.2,
   inset: 3,
-  bottom: 3.6,
+  /** The first caption line's box starts this far below the photo; the lines stack beneath it. */
+  gap: 2.4,
   placeMaxWidthRatio: 0.72,
   ink: "#111",
   inkCoords: "#333",
@@ -19,8 +20,9 @@ export const CARD = {
   weightCoords: 400,
   /**
    * Distance from the bottom of a line box to its baseline, as a fraction
-   * of font size, for EB Garamond at line-height 1.32. Measured once by the
-   * equivalence test (e2e/equivalence.spec.ts) on 2026-10-21 (DOM probe: 0.3199) and frozen here.
+   * of font size, for EB Garamond at line-height 1.2. Measured by the
+   * equivalence test's probe (e2e/equivalence.spec.ts) and frozen here; provisional until
+   * Task 2 of docs/superpowers/plans/2026-10-22-caption-under-photo.md records the measurement.
    */
   baselineFromBottom: 0.32,
 } as const;
@@ -68,7 +70,8 @@ export function layoutCard(spec: CardSpec): CardLayout {
 
   const fontSize = CARD.fontSize;
   const lineHeight = fontSize * CARD.lineHeight;
-  const lastBaseline = height - CARD.bottom - fontSize * CARD.baselineFromBottom;
+  // Hung from the photo: line i's box spans [strip.y + gap + i*lineHeight, +lineHeight]; its baseline sits baselineFromBottom*fontSize above the box's bottom.
+  const baselineOf = (i: number) => strip.y + CARD.gap + (i + 1) * lineHeight - fontSize * CARD.baselineFromBottom;
 
   const candidates: Array<Omit<CaptionLine, "baselineY">> = [
     { kind: "place", text: spec.place.trim(), weight: CARD.weight, color: CARD.ink },
@@ -78,8 +81,13 @@ export function layoutCard(spec: CardSpec): CardLayout {
   const present = candidates.filter((l) => l.text.length > 0);
   const lines: CaptionLine[] = present.map((l, i) => ({
     ...l,
-    baselineY: lastBaseline - (present.length - 1 - i) * lineHeight,
+    baselineY: baselineOf(i),
   }));
+  // The number rides the last present line's baseline, or where the first line would be.
+  const number =
+    spec.number === null
+      ? null
+      : { text: `#${spec.number}`, baselineY: baselineOf(Math.max(present.length - 1, 0)) };
 
   return {
     width: 100,
@@ -94,8 +102,7 @@ export function layoutCard(spec: CardSpec): CardLayout {
       placeMaxWidth: CARD.photoWidth * CARD.placeMaxWidthRatio,
     },
     lines,
-    number:
-      spec.number === null ? null : { text: `#${spec.number}`, baselineY: lastBaseline },
+    number,
   };
 }
 

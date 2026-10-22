@@ -56,7 +56,7 @@ const FRAME_VARS = {
   "--oo-mat": `${CARD.mat}cqw`,
   "--oo-strip": `${CARD.stripHeight}cqw`,
   "--oo-inset": `${CARD.inset}cqw`,
-  "--oo-bottom": `${CARD.bottom}cqw`,
+  "--oo-gap": `${CARD.gap}cqw`,
   "--oo-fs": `${CARD.fontSize}cqw`,
   "--oo-lh": `${CARD.lineHeight}`,
   "--oo-place-max": `${CARD.photoWidth * CARD.placeMaxWidthRatio}cqw`,
@@ -160,28 +160,30 @@ export function Card({
           )}
         </div>
         <figcaption className="oo-plate">
-          <div className="oo-lines">
-            {lines.map((l) =>
-              editable ? (
-                <span
-                  key={l.kind}
-                  className={`oo-line oo-line-${l.kind}`}
-                  data-hint={HINTS[l.kind]}
-                  contentEditable="plaintext-only"
-                  suppressContentEditableWarning
-                  spellCheck={false}
-                  onBlur={onLineBlur(l.kind)}
-                  onKeyDown={onLineKey}
-                  dangerouslySetInnerHTML={{ __html: escapeHtml(l.text) }}
-                />
-              ) : (
-                <span key={l.kind} className={`oo-line oo-line-${l.kind}`}>
-                  {l.text}
-                </span>
-              ),
-            )}
+          <div className="oo-caption">
+            <div className="oo-lines">
+              {lines.map((l) =>
+                editable ? (
+                  <span
+                    key={l.kind}
+                    className={`oo-line oo-line-${l.kind}`}
+                    data-hint={HINTS[l.kind]}
+                    contentEditable="plaintext-only"
+                    suppressContentEditableWarning
+                    spellCheck={false}
+                    onBlur={onLineBlur(l.kind)}
+                    onKeyDown={onLineKey}
+                    dangerouslySetInnerHTML={{ __html: escapeHtml(l.text) }}
+                  />
+                ) : (
+                  <span key={l.kind} className={`oo-line oo-line-${l.kind}`}>
+                    {l.text}
+                  </span>
+                ),
+              )}
+            </div>
+            <span className="oo-num">{number === null ? "" : `#${number}`}</span>
           </div>
-          <span className="oo-num">{number === null ? "" : `#${number}`}</span>
         </figcaption>
       </figure>
     </div>
