@@ -21,7 +21,9 @@ import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
 import { newCardId } from "@/lib/ids";
 import { type DescribedPhoto, describePhoto, lookupPlace } from "@/lib/photo";
+import { saveCard } from "@/lib/save";
 import { statusFor } from "@/lib/status";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 /** Development builds only. The condition is resolved at build time, so production bundles contain no panel code. */
 const DevVariationPanel =
@@ -170,6 +172,24 @@ export function MakeScreen() {
     }
   }
 
+  async function onAddToBoard() {
+    if (!photo || busy) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.classList.contains("oo-line")) active.blur();
+    setBusy(true);
+    setStatus("Saving…");
+    try {
+      const supabase = createBrowserSupabase();
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) throw error ?? new Error("not signed in");
+      await saveCard(supabase, data.user.id, photo, captionRef.current);
+      router.replace("/board");
+    } catch {
+      setStatus("Couldn't save the card. Try again.");
+      setBusy(false);
+    }
+  }
+
   return (
     <AppFrame
       top={
@@ -203,7 +223,7 @@ export function MakeScreen() {
         <Strip
           cells={[
             { label: "Replay intro", icon: "replay", disabled: !photo, onClick: () => setReplayKey((k) => k + 1) },
-            { label: "Add to board", icon: "grid-plus", selected: true, disabled: true },
+            { label: "Add to board", icon: "grid-plus", selected: true, disabled: !photo || busy, onClick: onAddToBoard },
             { label: "Print", icon: "printer", disabled: !photo || busy, onClick: onPrint },
           ]}
         />
