@@ -1,8 +1,13 @@
 {
   "name": "one-of-one",
   "private": true,
-  "engines": { "node": ">=24" },
-  "workspaces": ["packages/*", "apps/*"],
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
@@ -20,6 +25,7 @@
     "piexifjs": "^1.0.6",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
+    "supabase": "^2.121.0",
     "typescript": "~5.9.3"
   }
 }
