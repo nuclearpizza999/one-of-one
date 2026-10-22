@@ -1,3 +1,4 @@
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -26,5 +27,6 @@ export default defineConfig({
     url: "http://localhost:3000/board",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    env: { ...(process.env as Record<string, string>), DEV_PHOTOS_DIR: path.resolve("apps/web/public/dev") },
   },
 });

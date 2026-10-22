@@ -27,3 +27,6 @@ npm-debug.log*
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# local test photos (never committed)
+dev-photos/
