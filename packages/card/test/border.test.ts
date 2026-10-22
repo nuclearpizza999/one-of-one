@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BAND_UNITS, borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "../src/border";
 import { TEXTURES } from "../src/textures";
-import type { Variation } from "../src/variation";
+import { paletteFor, TIERS, TONES, type Tier, type Tone, type Variation } from "../src/variation";
 
 const base: Variation = {
   texture: "grain",
@@ -43,6 +43,26 @@ describe("borderSvg", () => {
     expect(groups[0]).toContain('url(#mat)');
     expect(groups[1]).toContain('url(#band)');
     expect(groups.reduce((rest, g) => rest.replace(g, ""), withoutDefs).trim()).toBe("");
+  });
+  it("keeps every texture, tone and tier inside two plain clip groups", () => {
+    for (const texture of Object.keys(TEXTURES) as (keyof typeof TEXTURES)[]) {
+      for (const tone of Object.keys(TONES) as Tone[]) {
+        for (const tier of Object.keys(TIERS) as Tier[]) {
+          const label = `${texture}/${tone}/${tier}`;
+          const svg = borderSvg({ ...base, texture, tone, tier, palette: paletteFor(tone, null) }, H);
+          const withoutDefs = svg.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "").replace(/<defs>.*<\/defs>/s, "");
+          const groups = withoutDefs.match(/<g clip-path="url\(#(mat|band)\)">.*?<\/g>/gs) ?? [];
+          expect(groups, label).toHaveLength(2);
+          expect(groups.reduce((rest, g) => rest.replace(g, ""), withoutDefs).trim(), label).toBe("");
+          for (const g of groups) {
+            const body = g.replace(/^<g clip-path="url\(#(mat|band)\)">/, "").replace(/<\/g>$/, "");
+            for (const bad of ["<g", "clip-path", "<svg", "<image", "<use", "<style", "<script"]) {
+              expect(body.includes(bad), `${label} body contains ${bad}`).toBe(false);
+            }
+          }
+        }
+      }
+    }
   });
   it("cuts the photo box out of the mat clip and keeps the band to the outer 2 units", () => {
     const svg = borderSvg(base, H);

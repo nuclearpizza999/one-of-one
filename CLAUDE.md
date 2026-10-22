@@ -19,6 +19,7 @@ npm test                                 Vitest unit tests in every workspace
 npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
 npm test -w packages/places -- resolve   one places test file
 npm run test:e2e                         Playwright; starts the dev server itself
+                                         (reusing a running dev server? start it with DEV_PHOTOS_DIR=apps/web/public/dev, or stop it first)
 npx playwright test -g "landscape"       one e2e case by title
 npm run lint                             ESLint (Next config) in apps/web
 npm run typecheck                        tsc for e2e, packages/card, packages/places and apps/web

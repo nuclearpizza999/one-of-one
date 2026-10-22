@@ -1,9 +1,10 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
 import { CARD } from "../packages/card/src/layout";
 import { TEXTURES } from "../packages/card/src/textures";
+import { TIERS } from "../packages/card/src/variation";
 
 /**
  * Largest share of differing pixels allowed between the DOM card and the PNG.
@@ -81,7 +82,8 @@ test("a one-unit caption drift is caught", async ({ page }) => {
 
 // Every registered texture, so adding one adds its screen-versus-print case.
 for (const id of Object.keys(TEXTURES)) {
-  const tier = id === "foil" ? "foil" : "fine";
+  const foilTier = Object.values(TIERS).find((t) => t.foil)?.id ?? "fine";
+  const tier = id === "foil" ? foilTier : "fine";
   const name = `portrait-texture-${id}`;
   test(`${name}: the DOM card and the PNG match`, async ({ page }) => {
     const { dom, png } = await capture(page, `fixture=portrait&coords=1&number=1&texture=${id}&tier=${tier}`);
@@ -101,4 +103,25 @@ test("CARD.baselineFromBottom is the DOM's measured baseline", async ({ page }) 
   console.log(`measured baselineFromBottom: ${measured.toFixed(4)} (CARD has ${CARD.baselineFromBottom})`);
   // 0.006 of a 34 px font is about 0.2 px at the 34 px test size, chosen so a one-pixel baseline error fails.
   expect(Math.abs(measured - CARD.baselineFromBottom)).toBeLessThan(0.006);
+});
+
+test("the print's photo region is the source photo, pixel for pixel", async ({ page }) => {
+  await page.goto("/dev/card?fixture=portrait&coords=1&number=1&texture=foil&tier=foil");
+  await page.waitForSelector('body[data-ready="1"]');
+  const bytes = await page.locator("#png").evaluate(async (el) => {
+    const r = await fetch((el as HTMLImageElement).src);
+    return Array.from(new Uint8Array(await r.arrayBuffer()));
+  });
+  const print = PNG.sync.read(Buffer.from(bytes));
+  const source = PNG.sync.read(readFileSync("apps/web/public/dev/portrait.png"));
+  // The photo box at u = 10: mat 5 units = 50 px, photo 900 x 1200.
+  expect(source.width).toBe(900);
+  expect(source.height).toBe(1200);
+  const region = new PNG({ width: 900, height: 1200 });
+  PNG.bitblt(print, region, 50, 50, 900, 1200, 0, 0);
+  const diff = new PNG({ width: 900, height: 1200 });
+  const differing = pixelmatch(source.data, region.data, diff.data, 900, 1200, { threshold: 0 });
+  console.log(`photo region: ${differing} differing pixels`);
+  if (differing > 0) writeFileSync(test.info().outputPath("photo-region-diff.png"), PNG.sync.write(diff));
+  expect(differing).toBe(0);
 });

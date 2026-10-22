@@ -157,7 +157,7 @@ export async function renderPng(input: RenderPngInput): Promise<RenderPngResult>
   const toBlob = input.toBlob ?? domToBlob;
   const fontsLoaded = await loadCardFonts();
   const loadImage = input.loadImage ?? domLoadImage;
-  const borderImage = input.border ? await loadImage(svgDataUrl(input.border)) : null;
+  const borderImage = input.border ? await loadImage(svgDataUrl(input.border)).catch(() => null) : null;
   const fullPhotoW = Math.min(input.naturalWidth, cap);
 
   let lastError: unknown;

@@ -193,6 +193,17 @@ describe("renderPng", () => {
     expect(contexts[0]!.calls.filter((c) => c[0] === "drawImage")).toHaveLength(1);
   });
 
+  it("a rejecting loader prints without the border", async () => {
+    const { createCanvas, contexts } = fakeCanvasFactory(10_000);
+    const r = await renderPng({
+      ...spec, image, naturalWidth: 900, naturalHeight: 1200, createCanvas, toBlob,
+      border: "<svg/>",
+      loadImage: async () => { throw new Error("boom"); },
+    });
+    expect(r.borderDrawn).toBe(false);
+    expect(contexts[0]!.calls.filter((c) => c[0] === "drawImage")).toHaveLength(1);
+  });
+
   it("never loads an image when no border is requested", async () => {
     const { createCanvas } = fakeCanvasFactory(10_000);
     let loads = 0;
