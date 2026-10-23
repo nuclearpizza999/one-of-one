@@ -5,7 +5,7 @@
 **Goal:** The empty space at the end of the Board's last row shows the 1/1 mark in one of six designs; when the Board opens, the space flicks through the designs, slowing down, and lands on a random one after about a second.
 
 **Design (decided with Alex on Oct 22, 2026, from a sheet of six families at five gap widths):**
-- All six designs, scaled to the space, with no other words: **fraction** (1 over a hairline over 1), **diagonal** (a hairline corner to corner, a 1 in the top-left and bottom-right corners), **wordmark** (1/1, upright in a sliver under 40 px wide), **stacked** (1 / 1 stacked under 160 px wide, side by side above), **pattern** (1/1 repeated in small muted type), **cropped** (a huge outlined 1/1 cut off by the space).
+- All six designs, scaled to the space, with no other words: **fraction** (1 over a hairline over 1), **diagonal** (a hairline corner to corner, a 1 in the top-left and bottom-right corners), **wordmark** (1/1, upright in a sliver under 40 px wide), **stacked** (1 / 1 stacked at every size), **pattern** (1/1 repeated in small muted type), **cropped** (a huge outlined 1/1 cut off by the space).
 - Drawn in the chrome's ink (`--ink`) on the wall (`--ground`), muted (`--muted`) for the pattern; Archivo, the chrome typeface. They invert in dark mode.
 - Shown only when the space is at least 12 px in both directions; nothing when the last row is full. The empty Board keeps "No cards yet."
 - The spin: twelve flicks, each a different design from the previous, with delays that grow from about 40 ms to about 150 ms (about one second in all), then a random design. Every visit picks anew. With `prefers-reduced-motion: reduce`, no spin: the random design shows at once.

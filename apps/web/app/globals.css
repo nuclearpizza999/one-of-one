@@ -340,12 +340,6 @@ button:disabled {
 .gap-slash {
   font-weight: 400;
 }
-@container (min-width: 160px) {
-  .gap-stacked {
-    flex-direction: row;
-    font-size: min(42cqh, 25cqw);
-  }
-}
 .gap-pattern {
   position: absolute;
   inset: 4px;
