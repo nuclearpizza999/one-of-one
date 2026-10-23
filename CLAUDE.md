@@ -32,7 +32,7 @@ npm run supabase:reset                   reapply supabase/migrations to the loca
 npm run supabase:test                    pgTAP tests in supabase/tests against the local stack
 ```
 
-`e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring.
+`e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring. Its pixel-ratio cases run on macOS only and are skipped on CI (Linux renders text edges differently); run `npm run test:e2e` on the Mac before merging any change to the card.
 
 ## Where things are
 
