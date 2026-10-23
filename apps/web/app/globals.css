@@ -262,7 +262,108 @@ button:disabled {
   outline: 2px solid var(--ink);
   outline-offset: -2px;
 }
+/* The last row's leftover space: a size container so the 1/1 designs scale to it. */
 .board-fill {
   flex-grow: 100000;
   flex-basis: 0;
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+  pointer-events: none;
+}
+.gap-logo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  font-family: var(--font-archivo), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  line-height: 1;
+}
+@container (max-width: 12px) or (max-height: 12px) {
+  .gap-logo {
+    display: none;
+  }
+}
+.gap-fraction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: min(32cqh, 50cqw);
+}
+.gap-rule {
+  display: block;
+  width: 1.1em;
+  height: 1px;
+  margin: 0.12em 0;
+  background: currentColor;
+}
+.gap-diagonal {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.gap-corner {
+  position: absolute;
+  font-size: max(10px, min(22cqh, 22cqw));
+}
+.gap-corner-tl {
+  left: 6px;
+  top: 4px;
+}
+.gap-corner-br {
+  right: 6px;
+  bottom: 4px;
+}
+.gap-wordmark {
+  letter-spacing: 0.06em;
+  font-size: min(28cqw, 50cqh);
+}
+@container (max-width: 40px) {
+  .gap-wordmark {
+    writing-mode: vertical-rl;
+    font-size: min(60cqw, 11px);
+  }
+}
+.gap-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: min(29cqh, 60cqw);
+}
+.gap-stacked > span {
+  line-height: 0.9;
+}
+.gap-slash {
+  font-weight: 400;
+}
+@container (min-width: 160px) {
+  .gap-stacked {
+    flex-direction: row;
+    font-size: min(42cqh, 25cqw);
+  }
+}
+.gap-pattern {
+  position: absolute;
+  inset: 4px;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.6;
+  letter-spacing: 0.12em;
+  word-spacing: 6px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.gap-cropped {
+  position: absolute;
+  left: -0.06em;
+  bottom: -0.2em;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+  font-size: 115cqh;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--ink);
 }

@@ -110,4 +110,41 @@ test.describe("rows of whole photos", () => {
     expect((await topbar.boundingBox())!.y).toBe(before.top);
     expect((await firstTile.boundingBox())!.y).toBeLessThan(before.tile - 300);
   });
+
+  test("the last row's space spins through the 1/1 designs and lands on one", async ({ page }) => {
+    await signIn(page, freshEmail());
+    await page.goto("/make");
+    await page.getByTestId("photo-input").setInputFiles(path.resolve("apps/web/public/dev/portrait.png"));
+    await expect(page.locator("img.oo-photo")).toBeVisible();
+    await page.getByRole("button", { name: "Add to board" }).click();
+    await expect(page).toHaveURL(/\/board$/);
+
+    const gap = page.locator(".board-fill");
+    await expect(gap).toHaveAttribute("aria-hidden", "true");
+    // It spins: more than one design appears before it lands.
+    const seen = new Set<string>();
+    const until = Date.now() + 3000;
+    while (Date.now() < until && (await gap.getAttribute("data-landed")) !== "true") {
+      const d = await gap.locator(".gap-logo").getAttribute("data-design", { timeout: 100 }).catch(() => null);
+      if (d) seen.add(d);
+      await page.waitForTimeout(25);
+    }
+    await expect(gap).toHaveAttribute("data-landed", "true");
+    expect(seen.size).toBeGreaterThan(1);
+    const final = await gap.locator(".gap-logo").getAttribute("data-design");
+    expect(["fraction", "diagonal", "wordmark", "stacked", "pattern", "cropped"]).toContain(final);
+    await expect(gap.locator(".gap-logo")).toBeVisible();
+  });
+
+  test("with reduced motion the space shows its design at once", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await signIn(page, freshEmail());
+    await page.goto("/make");
+    await page.getByTestId("photo-input").setInputFiles(path.resolve("apps/web/public/dev/portrait.png"));
+    await expect(page.locator("img.oo-photo")).toBeVisible();
+    await page.getByRole("button", { name: "Add to board" }).click();
+    await expect(page).toHaveURL(/\/board$/);
+    await expect(page.locator(".board-fill")).toHaveAttribute("data-landed", "true", { timeout: 500 });
+    await expect(page.locator(".board-fill .gap-logo")).toBeVisible();
+  });
 });

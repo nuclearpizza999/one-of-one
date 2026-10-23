@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
+import { BoardGap } from "./BoardGap";
 
 export interface BoardCard {
   id: string;
@@ -14,7 +15,8 @@ export interface BoardCard {
  * height and its flex-grow is proportional to its aspect, so the tiles that wrap
  * into a row grow to one shared height and the row runs margin to margin. The
  * inner padding keeps each tile at its photo's aspect: nothing is cropped. A
- * filler keeps the last, partial row left-aligned at the base height.
+ * filler keeps the last, partial row left-aligned at the base height, and shows
+ * the 1/1 mark in the space it takes (BoardGap).
  */
 export function BoardGrid({ cards }: { cards: BoardCard[] }) {
   return (
@@ -32,7 +34,7 @@ export function BoardGrid({ cards }: { cards: BoardCard[] }) {
             <img src={c.thumbUrl} alt="" width={c.width} height={c.height} loading="lazy" decoding="async" />
           </Link>
         ))}
-        <span className="board-fill" aria-hidden="true" />
+        <BoardGap />
       </div>
     </div>
   );
