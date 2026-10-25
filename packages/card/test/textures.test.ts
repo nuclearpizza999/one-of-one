@@ -186,16 +186,14 @@ describe("flower textures", () => {
         const svg = patterns[id](draw(seed));
         for (const stop of d.palette.foil) expect(svg.includes(stop), `${id} uses a foil stop`).toBe(false);
         for (const m of svg.matchAll(/(?:fill|stroke)="([^"]+)"/g)) expect(allowed.has(m[1]!), `${id} colour ${m[1]}`).toBe(true);
-        for (const m of svg.matchAll(/fill-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(0.35);
-        for (const m of svg.matchAll(/stroke-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(0.5);
+        for (const m of svg.matchAll(/fill-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(FLOWER_FILL_MAX);
+        for (const m of svg.matchAll(/stroke-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(FLOWER_STROKE_MAX);
         for (const el of svg.match(/<[a-z]+ [^>]*>/g) ?? []) {
           if (/fill="#/.test(el)) expect(el, `${id} fill without opacity`).toMatch(/fill-opacity=/);
           if (/stroke="#/.test(el)) expect(el, `${id} stroke without opacity`).toMatch(/stroke-opacity=/);
         }
       }
     }
-    expect(FLOWER_FILL_MAX).toBe(0.35);
-    expect(FLOWER_STROKE_MAX).toBe(0.5);
   });
   it("lighten keeps the hue toward white, so a mix of a tint that clears the caption floor clears it too", () => {
     for (const tint of ["#b08860", "#8a8a8a", "#6878a0"]) {

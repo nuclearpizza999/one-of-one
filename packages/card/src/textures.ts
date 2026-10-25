@@ -136,7 +136,10 @@ export function lighten(hex: string, t: number): string {
 export const FLOWER_FILL_MAX = 0.35;
 export const FLOWER_STROKE_MAX = 0.5;
 
-const op = (lo: number, hi: number, d: BorderDraw): string => f(lo + d.rng() * (hi - lo));
+/** A seeded opacity between `lo` and `hi`, clamped to the ceiling for fills or for strokes. */
+const op = (lo: number, hi: number, d: BorderDraw, max: number): string => f(Math.min(max, lo + d.rng() * (hi - lo)));
+const fillOp = (lo: number, hi: number, d: BorderDraw): string => op(lo, hi, d, FLOWER_FILL_MAX);
+const strokeOp = (lo: number, hi: number, d: BorderDraw): string => op(lo, hi, d, FLOWER_STROKE_MAX);
 
 /** A point in the mat, picked by area so every part of the mat gets its share. */
 function matPoint(d: BorderDraw): { x: number; y: number } {
@@ -182,14 +185,26 @@ function smallFlower(d: BorderDraw, cx: number, cy: number, size: number, n: num
   const rot = d.rng() * 360;
   const paint =
     `fill="${petalColor}" fill-opacity="${petalOpacity}" stroke="${d.palette.tint}" ` +
-    `stroke-opacity="${op(0.18, 0.3, d)}" stroke-width="${f(Math.max(0.05, size * 0.025))}"`;
+    `stroke-opacity="${strokeOp(0.18, 0.3, d)}" stroke-width="${f(Math.max(0.05, size * 0.025))}"`;
   const parts: string[] = [];
   for (let k = 0; k < n; k += 1) {
     const a = rot + (k * 360) / n;
     const rad = (a * Math.PI) / 180;
     parts.push(petal(cx + Math.sin(rad) * r * 0.5, cy - Math.cos(rad) * r * 0.5, r * (n === 4 ? 0.3 : 0.24), r * 0.48, a, paint));
   }
-  parts.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.2)}" fill="${d.palette.tint}" fill-opacity="${op(0.24, 0.34, d)}"/>`);
+  parts.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r * 0.2)}" fill="${d.palette.tint}" fill-opacity="${fillOp(0.24, 0.34, d)}"/>`);
+  return parts.join("");
+}
+
+/** `count` shapes from `draw`, each `size` + rng * `spread` across, at a point in the mat by area, moved clear of the photo. */
+function scatter(d: BorderDraw, count: number, size: number, spread: number, draw: (x: number, y: number, size: number) => string): string {
+  const parts: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const s = size + d.rng() * spread;
+    const at = matPoint(d);
+    const { x, y } = clearOfPhoto(d, at.x, at.y, s / 2);
+    parts.push(draw(x, y, s));
+  }
   return parts.join("");
 }
 
@@ -197,32 +212,18 @@ function smallFlower(d: BorderDraw, cx: number, cy: number, size: number, n: num
 export function daisies(d: BorderDraw): string {
   const count = 20 + Math.floor(d.rng() * 11);
   const pale = lighten(d.palette.tint, 0.45);
-  const parts: string[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const size = 1.6 + d.rng() * 1.6;
-    const at = matPoint(d);
-    const { x, y } = clearOfPhoto(d, at.x, at.y, size / 2);
-    parts.push(smallFlower(d, x, y, size, 5, pale, op(0.2, 0.32, d)));
-  }
-  return parts.join("");
+  return scatter(d, count, 1.6, 1.6, (x, y, size) => smallFlower(d, x, y, size, 5, pale, fillOp(0.2, 0.32, d)));
 }
 
 /** A meadow: 80 to 120 tiny four-petal florets and seed dots, 0.6 to 1.4 units across. */
 export function meadow(d: BorderDraw): string {
   const count = 80 + Math.floor(d.rng() * 41);
   const pale = lighten(d.palette.tint, 0.35);
-  const parts: string[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const size = 0.6 + d.rng() * 0.8;
-    const at = matPoint(d);
-    const { x, y } = clearOfPhoto(d, at.x, at.y, size / 2);
-    if (d.rng() < 0.65) {
-      parts.push(smallFlower(d, x, y, size, 4, d.rng() < 0.5 ? pale : d.palette.tint, op(0.16, 0.3, d)));
-    } else {
-      parts.push(`<circle cx="${f(x)}" cy="${f(y)}" r="${f(size * 0.18)}" fill="${d.palette.tint}" fill-opacity="${op(0.16, 0.3, d)}"/>`);
-    }
-  }
-  return parts.join("");
+  return scatter(d, count, 0.6, 0.8, (x, y, size) =>
+    d.rng() < 0.65
+      ? smallFlower(d, x, y, size, 4, d.rng() < 0.5 ? pale : d.palette.tint, fillOp(0.16, 0.3, d))
+      : `<circle cx="${f(x)}" cy="${f(y)}" r="${f(size * 0.18)}" fill="${d.palette.tint}" fill-opacity="${fillOp(0.16, 0.3, d)}"/>`,
+  );
 }
 
 /** A point given in a petal's own frame (-y along the petal) turned by `a` radians about (cx, cy). */
@@ -235,7 +236,7 @@ function lineFlower(d: BorderDraw, cx: number, cy: number, size: number): string
   const n = 5 + Math.floor(d.rng() * 3);
   const rot = d.rng() * Math.PI * 2;
   const ink =
-    `fill="none" stroke="${d.palette.tint}" stroke-opacity="${op(0.32, 0.42, d)}" ` +
+    `fill="none" stroke="${d.palette.tint}" stroke-opacity="${strokeOp(0.32, 0.42, d)}" ` +
     `stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"`;
   const parts: string[] = [];
   for (let k = 0; k < n; k += 1) {
@@ -256,7 +257,7 @@ function lineFlower(d: BorderDraw, cx: number, cy: number, size: number): string
     const a = rot + (k * Math.PI * 2) / dots + 0.3;
     const rr = R * (0.2 + d.rng() * 0.06);
     parts.push(
-      `<circle cx="${f(cx + Math.cos(a) * rr)}" cy="${f(cy + Math.sin(a) * rr)}" r="0.16" fill="${d.palette.tint}" fill-opacity="${op(0.24, 0.34, d)}"/>`,
+      `<circle cx="${f(cx + Math.cos(a) * rr)}" cy="${f(cy + Math.sin(a) * rr)}" r="0.16" fill="${d.palette.tint}" fill-opacity="${fillOp(0.24, 0.34, d)}"/>`,
     );
   }
   return parts.join("");
@@ -327,7 +328,7 @@ export function sprigs(d: BorderDraw): string {
     const c: [number, number] = [cx + inward[0] * bend, cy + inward[1] * bend];
     parts.push(
       `<path d="M${f(p0[0])} ${f(p0[1])}Q${f(c[0])} ${f(c[1])} ${f(p1[0])} ${f(p1[1])}" fill="none" ` +
-        `stroke="${d.palette.tint}" stroke-opacity="${op(0.32, 0.44, d)}" stroke-width="0.14" stroke-linecap="round"/>`,
+        `stroke="${d.palette.tint}" stroke-opacity="${strokeOp(0.32, 0.44, d)}" stroke-width="0.14" stroke-linecap="round"/>`,
     );
     const leaves = 3 + Math.floor(d.rng() * 3);
     for (let k = 0; k < leaves; k += 1) {
@@ -341,8 +342,8 @@ export function sprigs(d: BorderDraw): string {
       const [ux, uy] = [vx / vl, vy / vl];
       const angle = (Math.atan2(ux, -uy) * 180) / Math.PI;
       const paint =
-        `fill="${pale}" fill-opacity="${op(0.2, 0.32, d)}" stroke="${d.palette.tint}" ` +
-        `stroke-opacity="${op(0.2, 0.3, d)}" stroke-width="0.06"`;
+        `fill="${pale}" fill-opacity="${fillOp(0.2, 0.32, d)}" stroke="${d.palette.tint}" ` +
+        `stroke-opacity="${strokeOp(0.2, 0.3, d)}" stroke-width="0.06"`;
       parts.push(petal(at.x + ux * size * 0.5, at.y + uy * size * 0.5, size * 0.24, size * 0.5, angle, paint));
     }
   }
