@@ -61,11 +61,16 @@ test("a founder restyles a saved card from its page, and each pick is saved", as
   await page.reload();
   await expect(card).toHaveAttribute("data-texture", "grain");
 
-  await panel.locator(".design-field", { hasText: "Intro" }).getByRole("button", { name: "Flip" }).click();
-  await expect(frame).toHaveClass(/oo-intro-flip/);
+  // Pick an intro other than the one shown, so the reload proves the pick was saved.
+  const shown = /\boo-intro-(\w+)\b/.exec((await frame.getAttribute("class")) ?? "")?.[1];
+  expect(shown).toBeTruthy();
+  const [pickId, pickLabel] = shown === "flip" ? ["rise", "Rise"] : ["flip", "Flip"];
+  const pickClass = new RegExp(`\\boo-intro-${pickId}\\b`);
+  await panel.locator(".design-field", { hasText: "Intro" }).getByRole("button", { name: pickLabel, exact: true }).click();
+  await expect(frame).toHaveClass(pickClass);
   await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(frame).toHaveClass(/oo-intro-flip/);
+  await expect(frame).toHaveClass(pickClass);
   await expect(card).toHaveAttribute("data-texture", "grain");
 });
 
