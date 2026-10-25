@@ -8,7 +8,8 @@ const cssPath = fileURLToPath(new URL("../src/card.css", import.meta.url));
 
 describe("card.css fonts", () => {
   const css = readFileSync(cssPath, "utf8");
-  const urls = [...css.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1]!);
+  // Inline SVG data (the motion tiles) is not a file; every other url is.
+  const urls = [...css.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1]!).filter((u) => !u.startsWith("data:image/svg+xml"));
 
   it("declares exactly four font files, 400 and 600 in latin and latin-ext", () => {
     expect(urls.sort()).toEqual([
