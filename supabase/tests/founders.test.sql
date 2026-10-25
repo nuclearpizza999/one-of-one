@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(17);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at, raw_app_meta_data, raw_user_meta_data)
 values ('00000000-0000-0000-0000-0000000000f1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'f@example.test', '', now(), now(), now(), '{}', '{}'),
@@ -21,10 +21,18 @@ select is(public.is_founder(), false, 'a regular user is not a founder');
 select lives_ok($$ update public.cards set caption_place = 'Edited' where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaae2' $$, 'a regular user can edit other fields of their card');
 select throws_ok($$ update public.cards set variation = '{"texture":"linen"}' where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaae2' $$, '42501', 'only founders can change a card''s design', 'a regular user cannot change variation');
 select throws_ok($$ update public.cards set intro = 'fade' where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaae2' $$, '42501', 'only founders can change a card''s design', 'a regular user cannot change intro');
+select lives_ok($$ update public.cards set variation = variation, intro = intro where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaae2' $$, 'a regular user can write back an identical variation and intro');
 select lives_ok($$ update public.users set is_founder = true where id = '00000000-0000-0000-0000-0000000000e2' $$, 'a self-promotion update does not error');
+select throws_ok($$ insert into public.users (id, is_founder) values ('00000000-0000-0000-0000-0000000000e2', true) on conflict (id) do update set is_founder = true $$, '42501', 'only an operator can change the founder flag', 'a self-promotion insert ... on conflict is refused');
 
 reset role;
 select is((select is_founder from public.users where id = '00000000-0000-0000-0000-0000000000e2'), false, 'a user cannot set their own founder flag');
+
+-- An authenticated user with no users row.
+set local role authenticated;
+set local request.jwt.claims to '{"sub": "00000000-0000-0000-0000-0000000000d3", "role": "authenticated"}';
+select is(public.is_founder(), false, 'a user with no users row is not a founder');
+reset role;
 
 -- Founder F.
 set local role authenticated;
