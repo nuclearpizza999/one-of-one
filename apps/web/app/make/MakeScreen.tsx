@@ -7,15 +7,16 @@ import {
   withOverrides,
 } from "@one-of-one/card";
 import type { PlaceMatch } from "@one-of-one/places";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
+import { DesignPanel } from "@/components/DesignPanel";
 import { Icon } from "@/components/Icon";
 import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
+import { useIsFounder } from "@/lib/founder";
 import { newCardId } from "@/lib/ids";
 import { type DescribedPhoto, describePhoto, lookupPlace } from "@/lib/photo";
 import { printCard } from "@/lib/print";
@@ -23,15 +24,12 @@ import { saveCard } from "@/lib/save";
 import { statusFor } from "@/lib/status";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
-/** Development builds only. The condition is resolved at build time, so production bundles contain no panel code. */
-const DevVariationPanel =
-  process.env.NODE_ENV === "production"
-    ? null
-    : dynamic(() => import("@/components/DevVariationPanel").then((m) => m.DevVariationPanel), { ssr: false });
-
 export function MakeScreen() {
   const router = useRouter();
   const wall = useWall();
+  const isFounder = useIsFounder();
+  // Founders restyle their cards on the live site; development builds show the panel to everyone.
+  const showDesignPanel = isFounder === true || process.env.NODE_ENV !== "production";
   const fileInput = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<DescribedPhoto | null>(null);
   const [place, setPlace] = useState("");
@@ -48,7 +46,7 @@ export function MakeScreen() {
   const placeMatchRef = useRef<PlaceMatch | null>(null);
   const pickSeq = useRef(0);
 
-  // The variation on the card: the assigned one, plus any development overrides.
+  // The variation on the card: the assigned one, plus any picks from the design panel.
   const variation = photo ? withOverrides(photo.variation, overrides, photo.palette) : null;
 
   // Release the previous photo's object URL when it is replaced or the screen unmounts.
@@ -145,7 +143,9 @@ export function MakeScreen() {
       const supabase = createBrowserSupabase();
       const { data, error } = await supabase.auth.getUser();
       if (error || !data.user) throw error ?? new Error("not signed in");
-      await saveCard(supabase, data.user.id, photo, captionRef.current);
+      // Only a founder's picks are saved; anyone else's card keeps the assigned variation and intro.
+      const toSave = isFounder === true && variation ? { ...photo, variation } : photo;
+      await saveCard(supabase, data.user.id, toSave, captionRef.current);
       router.replace("/board");
     } catch {
       setStatus("Couldn't save the card. Try again.");
@@ -191,8 +191,8 @@ export function MakeScreen() {
           ]}
         />
       </div>
-      {DevVariationPanel && photo ? (
-        <DevVariationPanel
+      {showDesignPanel && photo ? (
+        <DesignPanel
           derived={photo.variation}
           overrides={overrides}
           onChange={onOverrides}

@@ -186,7 +186,7 @@ export function deriveVariation(inputs: VariationInputs): Variation {
   };
 }
 
-/** What the development panel may change. Production never calls withOverrides with anything but {}. */
+/** What the design panel may change (founders on the live site, everyone in development builds). Anyone else's overrides stay {}. */
 export type VariationOverrides = Partial<Pick<Variation, "texture" | "tone" | "tier" | "motion" | "intro">>;
 
 /** The texture an overridden tier implies: a foil tier always carries foil; leaving one drops back to the plain fallback. */

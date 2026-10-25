@@ -170,25 +170,25 @@ test("says so when the lookup answers with an error", async ({ page }) => {
   await expect(page.locator(".oo-line-date")).toHaveText("July 1st, 2026");
 });
 
-test("the dev panel switches the live card's variation and returns to the assigned one", async ({ page }) => {
+test("the design panel switches the live card's variation and returns to the assigned one", async ({ page }) => {
   await page.goto("/make");
   await page.getByTestId("photo-input").setInputFiles(nogps); // FUJIFILM: the rule assigns "worn"
   const card = page.locator("figure.oo-card");
   await expect(card).toHaveAttribute("data-texture", "worn");
   await expect(page.locator("img.oo-border-img")).toHaveCount(1);
-  await expect(page.locator("[data-dev-assigned]")).toContainText("Assigned: worn");
+  await expect(page.locator("[data-design-assigned]")).toContainText("Assigned: worn");
 
-  const texture = page.locator(".dev-field", { hasText: "Texture" });
+  const texture = page.locator(".design-field", { hasText: "Texture" });
   await texture.getByRole("button", { name: "Foil" }).click();
   await expect(card).toHaveAttribute("data-texture", "foil");
   await texture.getByRole("button", { name: "Assigned" }).click();
   await expect(card).toHaveAttribute("data-texture", "worn");
 
-  const tone = page.locator(".dev-field", { hasText: "Tone" });
+  const tone = page.locator(".design-field", { hasText: "Tone" });
   await tone.getByRole("button", { name: "Photo" }).click();
   await expect(card).toHaveAttribute("data-tone", "photo");
 
-  const tier = page.locator(".dev-field", { hasText: "Tier" });
+  const tier = page.locator(".design-field", { hasText: "Tier" });
   await tier.getByRole("button", { name: "Animated" }).click();
   await expect(card).toHaveAttribute("data-motion", "sheen");
   await expect(page.locator(".oo-frame")).toHaveClass(/oo-motion-sheen/);
@@ -197,7 +197,7 @@ test("the dev panel switches the live card's variation and returns to the assign
   await expect(card).toHaveAttribute("data-texture", "worn"); // and leaving it restores the camera rule
   await expect(card).toHaveAttribute("data-motion", "none");
 
-  const intro = page.locator(".dev-field", { hasText: "Intro" });
+  const intro = page.locator(".design-field", { hasText: "Intro" });
   await intro.getByRole("button", { name: "Flip" }).click();
   await expect(page.locator(".oo-frame")).toHaveClass(/oo-intro-flip/);
 });
@@ -205,8 +205,8 @@ test("the dev panel switches the live card's variation and returns to the assign
 test("the printed PNG carries the border, differs between textures, and can leave it off", async ({ page }) => {
   await page.goto("/make");
   await page.getByTestId("photo-input").setInputFiles(seoul);
-  const texture = page.locator(".dev-field", { hasText: "Texture" });
-  const borderOnPrint = page.locator(".dev-field", { hasText: "Border on print" });
+  const texture = page.locator(".design-field", { hasText: "Texture" });
+  const borderOnPrint = page.locator(".design-field", { hasText: "Border on print" });
   const print = async () => {
     const dl = page.waitForEvent("download");
     await page.getByRole("button", { name: "Print" }).click();

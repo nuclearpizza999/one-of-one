@@ -45,6 +45,7 @@ Layout and type are fixed on every card; only the border varies, the way a tradi
   - camera or lens from EXIF (a Fuji body gets its own look)
   - number tier (low numbers earn foil or animated edges)
   - place type (restaurant, landmark, nature)
+  - The one exception (decided Oct 24, 2026): the founders may restyle their own cards through a design panel, a database flag on their user row that only an operator sets; everyone else's cards keep the assigned design.
 - Deterministic. The same card always renders the same way: the variation is a function of the card id plus the inputs above, and is re-derived when the number is assigned.
 - Procedural first. Textures are generated in code, seeded by card id, with a small hand-made set for the rare tiers. No illustration pipeline per card.
 - Revealed by the intro. Rise, Develop and Flip are the moment you see what the card got.

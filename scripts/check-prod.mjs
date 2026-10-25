@@ -1,5 +1,6 @@
 // Proves a production build serves none of the development surfaces:
-// /dev/* and /api/dev/* are 404, and the Make page and its scripts carry no dev-panel markup.
+// /dev/* and /api/dev/* are 404, and the built scripts and styles carry no gallery or dev-card markup.
+// The design panel ships by design (founders only, Oct 24, 2026); a signed-out page never renders it.
 // Run after `npm run build`: node scripts/check-prod.mjs
 import { spawn } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
@@ -8,7 +9,7 @@ import { fileURLToPath } from "node:url";
 
 const port = 3100;
 const base = `http://localhost:${port}`;
-const MARKERS = ["data-dev-panel", "Variation testing (development only)", "data-dev-gallery", "drift-border", ".dev-panel", ".gallery-cell", "/api/dev/photos"];
+const MARKERS = ["data-dev-gallery", "drift-border", ".gallery-cell", "/api/dev/photos"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForServer() {
@@ -83,7 +84,7 @@ try {
   const signin = await fetch(`${base}/signin`);
   check(signin.status === 200, `/signin should be 200, got ${signin.status}`);
   const html = await signin.text();
-  check(!html.includes("data-dev-panel"), "/signin HTML contains the dev panel");
+  check(!html.includes("data-design-panel"), "/signin HTML contains the design panel");
   const scripts = [...html.matchAll(/src="([^"]+\.js[^"]*)"/g)].map((m) => m[1]);
   check(scripts.length > 0, "no scripts found on /signin");
   for (const src of scripts) {

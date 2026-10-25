@@ -1,10 +1,10 @@
 "use client";
 
-import "./dev.css";
+import "./design-panel.css";
 import { INTROS, MOTIONS, TEXTURES, TIERS, TONES, type Variation, type VariationOverrides } from "@one-of-one/card";
 import { Strip } from "@/components/Strip";
 
-export interface DevVariationPanelProps {
+export interface DesignPanelProps {
   derived: Variation;
   overrides: VariationOverrides;
   onChange: (next: VariationOverrides) => void;
@@ -23,8 +23,11 @@ const FIELDS: ReadonlyArray<{ key: Field; title: string; entries: ReadonlyArray<
   { key: "motion", title: "Motion", entries: Object.values(MOTIONS) },
 ];
 
-/** Development builds only: pick any variation value to see it on the live card and in the print. Production never renders this. */
-export function DevVariationPanel({ derived, overrides, onChange, borderOnPrint, onBorderOnPrint }: DevVariationPanelProps) {
+/**
+ * Pick any variation value to see it on the live card and in the print. Rendered for founders on the
+ * live site and for everyone in development builds; only a founder's picks are saved with the card.
+ */
+export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBorderOnPrint }: DesignPanelProps) {
   const set = (key: Field, id: string | undefined) => {
     const next: Record<string, string> = { ...(overrides as Record<string, string>) };
     if (id === undefined) delete next[key];
@@ -33,9 +36,9 @@ export function DevVariationPanel({ derived, overrides, onChange, borderOnPrint,
   };
 
   return (
-    <section className="dev-panel" data-dev-panel aria-label="Variation testing (development only)">
+    <section className="design-panel" data-design-panel aria-label="Card design">
       {FIELDS.map((f) => (
-        <div className="dev-field" key={f.key}>
+        <div className="design-field" key={f.key}>
           <span className="label">{f.title}</span>
           <Strip
             size="option"
@@ -51,7 +54,7 @@ export function DevVariationPanel({ derived, overrides, onChange, borderOnPrint,
           />
         </div>
       ))}
-      <div className="dev-field">
+      <div className="design-field">
         <span className="label">Border on print</span>
         <Strip
           size="option"
@@ -61,7 +64,7 @@ export function DevVariationPanel({ derived, overrides, onChange, borderOnPrint,
           ]}
         />
       </div>
-      <p className="status" data-dev-assigned>
+      <p className="status" data-design-assigned>
         Assigned: {derived.texture} · {derived.tone} · {derived.tier} · {derived.motion} · {derived.intro} · seed 0x
         {derived.seed.toString(16)} · tint {derived.palette.tint}
       </p>

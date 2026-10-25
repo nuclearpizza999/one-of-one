@@ -1,0 +1,22 @@
+/* The card design panel on Make: founders on the live site, everyone in development builds. */
+.design-panel {
+  margin: 24px 20px 0;
+  padding-top: 14px;
+  border-top: 1px dashed var(--muted);
+}
+.design-field {
+  margin-top: 10px;
+}
+.design-field .label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.design-panel .strip-cell {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 0 2px;
+}

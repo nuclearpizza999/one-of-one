@@ -25,7 +25,7 @@ npx playwright test -g "landscape"       one e2e case by title
 npm run lint                             ESLint (Next config) in apps/web
 npm run typecheck                        tsc for e2e, packages/card, packages/places and apps/web
 npm run fixtures                         regenerate apps/web/public/dev/* (PNG fixtures, then EXIF JPEG fixtures)
-npm run check:prod                       production build, then prove /dev/*, /api/dev/* and the Make dev panel are absent
+npm run check:prod                       production build, then prove /dev/*, /api/dev/* and the gallery and dev-card markup are absent
 npm run supabase:start                   local Supabase stack (needs Docker): API :54321, Postgres :54322, Mailpit :54324
 npm run supabase:env                     write apps/web/.env.local from the running local stack
 npm run supabase:reset                   reapply supabase/migrations to the local stack
@@ -42,7 +42,8 @@ npx supabase db push                     apply new migrations to the hosted proj
 - `apps/web` is the Next.js App Router app: chrome components in `components/`, screens under `app/`, `/dev/card` a dev-only route for the equivalence test.
 - `supabase/` holds the schema (`migrations/`), the local stack's settings and the sign-in email template; `supabase test db` runs the pgTAP files in `supabase/tests/`.
 - `apps/web/proxy.ts` is the sign-in wall; `apps/web/lib/supabase/` holds the browser and server clients and the public-path rule; `lib/save.ts` is the one place a card is written; `lib/print.ts` is the one print path (Make and the opened card).
-- Development-only surfaces, absent from production builds: the variation panel under the card on Make (switch intro, texture, tone, tier, motion, border on print), `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
+- The design panel under the card on Make (`components/DesignPanel.tsx`: switch intro, texture, tone, tier, motion, border on print) ships to production but renders only for founders (`users.is_founder`, read by `useIsFounder` in `lib/founder.ts`); development builds show it to everyone, but only a founder's picks are saved with the card.
+- Development-only surfaces, absent from production builds: `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
 - Hosted since Oct 24, 2026: Supabase project `qdxiuvimqnqofqkhaize` (us-west-1, free plan) and Vercel at https://one-of-one-eight.vercel.app, which rebuilds on every push to main, so main is live. Migrations on the hosted database must never wipe or rewrite saved data, and it is never reset.
 - Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata), 2 (variation) and 4 (accounts and the board) are done. Next is step 5 (Add to board sheet and numbering). Decisions and plans so far are under `docs/superpowers/`.
 
@@ -88,5 +89,5 @@ Next.js app, Postgres with PostGIS, object storage for photos, `exifr` for EXIF 
 - An EXIF date is wall-clock at capture with no zone. exifr builds the `Date` from its components in the device's zone and `fmtDate` reads local getters, so the card shows the date the camera recorded. Never convert to UTC. When a capture date is persisted (step 4), store the wall-clock as a zone-less string or the caption text, never `toISOString()`, which would shift the day across UTC.
 - Precision is stored as `city` or `neighborhood` (data model) and shown as City or Area (chrome). Keep each vocabulary on its own side.
 - Prefer a short status line in plain words over modal errors when metadata is missing.
-- Variation is assigned by `deriveVariation` from the photo's facts; users never pick it. Everything that varies is a registry entry in `packages/card` (`TEXTURES`, `TONES`, `TIERS`, `MOTIONS`, `INTROS`): add there, never in the panel, the gallery or the tests, which read the registries. The rule table `VARIATION_RULES` is a first draft until textures have been judged on about 50 real photos.
+- Variation is assigned by `deriveVariation` from the photo's facts; users never pick it (founders excepted, Oct 24, 2026). Everything that varies is a registry entry in `packages/card` (`TEXTURES`, `TONES`, `TIERS`, `MOTIONS`, `INTROS`): add there, never in the panel, the gallery or the tests, which read the registries. The rule table `VARIATION_RULES` is a first draft until textures have been judged on about 50 real photos.
 - Development-only controls render only when `process.env.NODE_ENV !== "production"` and must never ship; `npm run check:prod` is the proof.

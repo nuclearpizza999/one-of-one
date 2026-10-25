@@ -122,7 +122,7 @@ export function foilFill(id: string, d: BorderDraw): { def: string; use: string 
 /**
  * The texture registry. Adding a texture is one entry: an id, a label and a draw
  * function that returns SVG fragments for the mat. Every texture layers a coarse
- * mottle (seen on screen) under a fine grain (seen in print). The dev panel, the
+ * mottle (seen on screen) under a fine grain (seen in print). The design panel, the
  * gallery page and the equivalence test read this table.
  */
 export const TEXTURES = {
