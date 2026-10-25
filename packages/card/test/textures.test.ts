@@ -2,7 +2,22 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { mulberry32 } from "../src/border";
-import { type BorderDraw, TEXTURES, foilFill, grainFilter, mottleFilter, wearStrokes } from "../src/textures";
+import { clearsCaptionFloor } from "../src/contrast";
+import {
+  type BorderDraw,
+  FLOWER_FILL_MAX,
+  FLOWER_STROKE_MAX,
+  TEXTURES,
+  blooms,
+  daisies,
+  foilFill,
+  grainFilter,
+  lighten,
+  meadow,
+  mottleFilter,
+  sprigs,
+  wearStrokes,
+} from "../src/textures";
 import { TIERS } from "../src/variation";
 
 const PHOTO = { x: 5, y: 5, w: 90, h: 120 };
@@ -116,6 +131,78 @@ describe("foilFill", () => {
     expect(f.def).toMatch(/rotate\(\d+ 0\.5 0\.5\)/);
     expect(f.use).toBe('<rect x="0" y="0" width="100" height="141" fill="url(#foil)"/>');
     expect(foilFill("foil", draw(321))).toEqual(f);
+  });
+});
+
+describe("flower textures", () => {
+  const FLOWERS = ["daisy", "meadow", "bloom", "sprig"] as const;
+  const patterns = { daisy: daisies, meadow, bloom: blooms, sprig: sprigs };
+  const count = (svg: string, re: RegExp) => (svg.match(re) ?? []).length;
+  /** How many flowers (or sprigs) each pattern drew: daisies by centre dot, meadow by floret centre or seed dot, blooms by ring, sprigs by stem. */
+  const flowersIn = {
+    daisy: (s: string) => count(s, /<circle/g),
+    meadow: (s: string) => count(s, /<circle/g),
+    bloom: (s: string) => count(s, /<circle[^>]*fill="none"/g),
+    sprig: (s: string) => count(s, /<path/g),
+  };
+  const ranges = { daisy: [20, 30], meadow: [80, 120], bloom: [3, 4], sprig: [12, 18] } as const;
+
+  it("are registered", () => {
+    for (const id of FLOWERS) expect(TEXTURES[id].id).toBe(id);
+  });
+  it("are deterministic per seed and differ across seeds", () => {
+    for (const id of FLOWERS) {
+      expect(patterns[id](draw(7))).toBe(patterns[id](draw(7)));
+      expect(patterns[id](draw(7))).not.toBe(patterns[id](draw(8)));
+    }
+  });
+  it("draw the specified number of flowers", () => {
+    for (const id of FLOWERS) {
+      for (let seed = 1; seed <= 40; seed += 1) {
+        const n = flowersIn[id](patterns[id](draw(seed)));
+        expect(n, `${id} seed ${seed}`).toBeGreaterThanOrEqual(ranges[id][0]);
+        expect(n, `${id} seed ${seed}`).toBeLessThanOrEqual(ranges[id][1]);
+      }
+    }
+  });
+  it("draw nothing whose centre or start lies inside the photo box", () => {
+    for (const id of FLOWERS) {
+      for (let seed = 1; seed <= 40; seed += 1) {
+        const svg = patterns[id](draw(seed));
+        const points = [
+          ...[...svg.matchAll(/<(?:circle|ellipse) cx="([\d.-]+)" cy="([\d.-]+)"/g)].map((m) => [Number(m[1]), Number(m[2])]),
+          ...[...svg.matchAll(/<path d="M([\d.-]+) ([\d.-]+)/g)].map((m) => [Number(m[1]), Number(m[2])]),
+        ];
+        expect(points.length, id).toBeGreaterThan(0);
+        for (const [x, y] of points) expect(insidePhoto(x!, y!), `${id} seed ${seed}: ${x},${y}`).toBe(false);
+      }
+    }
+  });
+  it("ink only in the tint and lighter mixes of it, under the opacity ceilings, never in the foil stops", () => {
+    const d = draw(3);
+    const allowed = new Set([d.palette.tint, lighten(d.palette.tint, 0.45), lighten(d.palette.tint, 0.35), lighten(d.palette.tint, 0.3), "none"]);
+    for (const id of FLOWERS) {
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const svg = patterns[id](draw(seed));
+        for (const stop of d.palette.foil) expect(svg.includes(stop), `${id} uses a foil stop`).toBe(false);
+        for (const m of svg.matchAll(/(?:fill|stroke)="([^"]+)"/g)) expect(allowed.has(m[1]!), `${id} colour ${m[1]}`).toBe(true);
+        for (const m of svg.matchAll(/fill-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(0.35);
+        for (const m of svg.matchAll(/stroke-opacity="([\d.]+)"/g)) expect(Number(m[1])).toBeLessThanOrEqual(0.5);
+        for (const el of svg.match(/<[a-z]+ [^>]*>/g) ?? []) {
+          if (/fill="#/.test(el)) expect(el, `${id} fill without opacity`).toMatch(/fill-opacity=/);
+          if (/stroke="#/.test(el)) expect(el, `${id} stroke without opacity`).toMatch(/stroke-opacity=/);
+        }
+      }
+    }
+    expect(FLOWER_FILL_MAX).toBe(0.35);
+    expect(FLOWER_STROKE_MAX).toBe(0.5);
+  });
+  it("lighten keeps the hue toward white, so a mix of a tint that clears the caption floor clears it too", () => {
+    for (const tint of ["#b08860", "#8a8a8a", "#6878a0"]) {
+      expect(lighten(tint, 0)).toBe(tint);
+      expect(lighten(tint, 1)).toBe("#ffffff");
+      expect(clearsCaptionFloor(lighten(tint, 0.3))).toBe(true);
+    }
   });
 });
 
