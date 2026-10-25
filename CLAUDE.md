@@ -30,6 +30,7 @@ npm run supabase:start                   local Supabase stack (needs Docker): AP
 npm run supabase:env                     write apps/web/.env.local from the running local stack
 npm run supabase:reset                   reapply supabase/migrations to the local stack
 npm run supabase:test                    pgTAP tests in supabase/tests against the local stack
+npx supabase db push                     apply new migrations to the hosted project (linked; run after merging a schema change)
 ```
 
 `e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring. Its pixel-ratio cases run on macOS only and are skipped on CI (Linux renders text edges differently); run `npm run test:e2e` on the Mac before merging any change to the card.
@@ -42,6 +43,7 @@ npm run supabase:test                    pgTAP tests in supabase/tests against t
 - `supabase/` holds the schema (`migrations/`), the local stack's settings and the sign-in email template; `supabase test db` runs the pgTAP files in `supabase/tests/`.
 - `apps/web/proxy.ts` is the sign-in wall; `apps/web/lib/supabase/` holds the browser and server clients and the public-path rule; `lib/save.ts` is the one place a card is written; `lib/print.ts` is the one print path (Make and the opened card).
 - Development-only surfaces, absent from production builds: the variation panel under the card on Make (switch intro, texture, tone, tier, motion, border on print), `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, and `/dev/card` for the equivalence test. `npm run check:prod` proves they do not ship.
+- Hosted since Oct 24, 2026: Supabase project `qdxiuvimqnqofqkhaize` (us-west-1, free plan) and Vercel at https://one-of-one-eight.vercel.app, which rebuilds on every push to main, so main is live. Migrations on the hosted database must never wipe or rewrite saved data, and it is never reset.
 - Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata), 2 (variation) and 4 (accounts and the board) are done. Next is step 5 (Add to board sheet and numbering). Decisions and plans so far are under `docs/superpowers/`.
 
 ## Reference material
