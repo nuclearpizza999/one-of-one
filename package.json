@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w apps/web",
+    "dev:lan": "npm run dev:lan -w apps/web",
     "build": "npm run build -w apps/web",
     "check:prod": "npm run build && node scripts/check-prod.mjs",
     "test": "npm test --workspaces --if-present",

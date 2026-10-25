@@ -13,8 +13,8 @@ Read `SPEC.md` before any design or architecture decision. It is the source of t
 npm workspaces on Node 24. Install once with `npm install` and `npx playwright install chromium`.
 
 ```
-npm run dev                              Next dev server at http://localhost:3000 (apps/web)
-                                         on a phone on the same Wi-Fi: http://<this Mac's LAN IP>:3000 (next.config allows private-range origins in dev)
+npm run dev                              Next dev server at http://localhost:3000 (apps/web), this Mac only, signed in automatically as the local founder
+npm run dev:lan                          the same on the Wi-Fi for a phone: http://<this Mac's LAN IP>:3000, with the sign-in bypass off
                                          against the local stack it signs straight into the founder dev@one-of-one.local (no sign-in screen; `dev` typed as the email on /signin does the same); turn it off with DEV_AUTO_SIGNIN=0 npm run dev
 npm test                                 Vitest unit tests in every workspace
 npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
