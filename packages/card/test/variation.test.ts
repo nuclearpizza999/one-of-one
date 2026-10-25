@@ -166,7 +166,7 @@ describe("deriveVariation", () => {
     expect(seen).toEqual(ids);
   });
   it("never assigns the founders-only motions", () => {
-    const assigned = new Set(Object.values(TIERS).map((t) => t.motion));
+    const assigned = new Set<string>(Object.values(TIERS).map((t) => t.motion));
     for (const m of ["glow", "twinkle", "petals"] as const) {
       expect(MOTIONS[m]).toBeDefined();
       expect(assigned.has(m)).toBe(false);
