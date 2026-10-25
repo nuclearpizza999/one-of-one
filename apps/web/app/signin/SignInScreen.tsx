@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { StatusLine } from "@/components/StatusLine";
 import { TopBar } from "@/components/TopBar";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { isCodeword } from "@/lib/supabase/dev-bypass";
 
 /** The eighth screen: an email, then the six-digit code from the email. No passwords, no tab bar. */
 export function SignInScreen() {
@@ -19,6 +20,10 @@ export function SignInScreen() {
   async function sendCode(e: FormEvent) {
     e.preventDefault();
     const address = email.trim();
+    if (process.env.NODE_ENV !== "production" && isCodeword(address)) {
+      await devSignIn();
+      return;
+    }
     setBusy(true);
     let error: { status?: number } | null;
     try {
@@ -34,6 +39,26 @@ export function SignInScreen() {
     }
     setSent(true);
     setStatus(`We sent a six-digit code to ${address}.`);
+  }
+
+  /** Development only: the codeword signs into the local dev account through /api/dev/signin. */
+  async function devSignIn() {
+    if (process.env.NODE_ENV === "production") return;
+    setBusy(true);
+    let ok = false;
+    try {
+      ok = (await fetch("/api/dev/signin", { method: "POST" })).ok;
+    } catch {
+      ok = false;
+    } finally {
+      setBusy(false);
+    }
+    if (!ok) {
+      setStatus("Dev sign-in is off. Run npm run supabase:env against the local stack.");
+      return;
+    }
+    router.replace("/board");
+    router.refresh();
   }
 
   async function verify(e: FormEvent) {
@@ -76,7 +101,8 @@ export function SignInScreen() {
         <form className="form" onSubmit={sent ? verify : sendCode}>
           <label className="field">
             <span className="field-label">Email</span>
-            <input type="email" name="email" autoComplete="email" inputMode="email" required readOnly={sent} value={email} onChange={(e) => setEmail(e.target.value)} />
+            {/* Development builds take the codeword `dev` here; the field turns plain text for it so the browser's email check lets it through. */}
+            <input type={process.env.NODE_ENV !== "production" && isCodeword(email) ? "text" : "email"} name="email" autoComplete="email" inputMode="email" required readOnly={sent} value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
           {sent ? (
             <label className="field">

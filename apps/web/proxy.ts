@@ -1,11 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { devBypassEnabled, devSignIn } from "@/lib/supabase/dev-bypass";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { isPublicPath } from "@/lib/supabase/paths";
 
-/** Refreshes the session cookie and walls every route but the public ones behind sign-in. */
+/**
+ * Refreshes the session cookie and walls every route but the public ones behind sign-in.
+ * Development only, against the local stack: a request with no session signs into the dev account instead (lib/supabase/dev-bypass.ts).
+ */
 export async function proxy(request: NextRequest) {
-  if (isPublicPath(request.nextUrl.pathname)) return NextResponse.next({ request });
+  const bypass = process.env.NODE_ENV !== "production" && devBypassEnabled();
+  const onSignin = request.nextUrl.pathname === "/signin";
+  if (isPublicPath(request.nextUrl.pathname) && !(bypass && onSignin)) return NextResponse.next({ request });
 
   let response = NextResponse.next({ request });
   const { url, key } = supabaseEnv();
@@ -22,6 +28,17 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getUser();
   if (data.user) return response;
+
+  if (process.env.NODE_ENV !== "production" && bypass && (await devSignIn(supabase))) {
+    if (!onSignin) return response;
+    const board = request.nextUrl.clone();
+    board.pathname = "/board";
+    board.search = "";
+    const redirect = NextResponse.redirect(board);
+    for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
+    return redirect;
+  }
+  if (onSignin) return response;
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.json({ error: "sign in first" }, { status: 401, headers: { "Cache-Control": "no-store" } });

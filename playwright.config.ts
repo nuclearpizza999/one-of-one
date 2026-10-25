@@ -30,6 +30,7 @@ export default defineConfig({
     url: "http://localhost:3000/dev/card?fixture=portrait",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    env: { ...(process.env as Record<string, string>), DEV_PHOTOS_DIR: path.resolve("apps/web/public/dev") },
+    // DEV_AUTO_SIGNIN=0 turns off the local sign-in bypass, so every spec exercises the real sign-in screen.
+    env: { ...(process.env as Record<string, string>), DEV_PHOTOS_DIR: path.resolve("apps/web/public/dev"), DEV_AUTO_SIGNIN: "0" },
   },
 });

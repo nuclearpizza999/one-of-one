@@ -1,5 +1,6 @@
 // Proves a production build serves none of the development surfaces:
-// /dev/* and /api/dev/* are 404, and the built scripts and styles carry no gallery or dev-card markup.
+// /dev/* and /api/dev/* are 404, the built scripts and styles carry no gallery or dev-card markup,
+// and no built file (browser or server) carries the local sign-in bypass.
 // The design panel ships by design (founders only, Oct 24, 2026); a signed-out page never renders it.
 // Run after `npm run build`: node scripts/check-prod.mjs
 import { spawn } from "node:child_process";
@@ -9,7 +10,10 @@ import { fileURLToPath } from "node:url";
 
 const port = 3100;
 const base = `http://localhost:${port}`;
-const MARKERS = ["data-dev-gallery", "drift-border", ".gallery-cell", "/api/dev/photos"];
+const MARKERS = ["data-dev-gallery", "drift-border", ".gallery-cell", "/api/dev/photos", "/api/dev/signin", "dev@one-of-one.local", "DEV_SIGNIN_PASSWORD"];
+// The sign-in bypass must be absent from the server bundles too (proxy, pages, route handlers), not only from the browser's.
+// The route's own path is left out of this list: the build keeps an /api/dev/signin entry (answering 404) in its manifests.
+const SERVER_MARKERS = ["dev@one-of-one.local", "DEV_SIGNIN_PASSWORD"];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForServer() {
@@ -37,6 +41,15 @@ for (const f of built) {
   const file = join(staticDir, String(f));
   const text = readFileSync(file, "utf8");
   for (const m of MARKERS) if (text.includes(m)) failures.push(`${file} contains dev marker ${JSON.stringify(m)}`);
+}
+
+const serverDir = fileURLToPath(new URL("../apps/web/.next/server", import.meta.url));
+const serverBuilt = readdirSync(serverDir, { recursive: true }).filter((f) => /\.(js|json|html|rsc)$/.test(String(f)));
+check(serverBuilt.length > 0, `no server files found under ${serverDir}`);
+for (const f of serverBuilt) {
+  const file = join(serverDir, String(f));
+  const text = readFileSync(file, "utf8");
+  for (const m of SERVER_MARKERS) if (text.includes(m)) failures.push(`${file} contains dev marker ${JSON.stringify(m)}`);
 }
 
 let server;
@@ -77,6 +90,9 @@ try {
     const r = await fetch(`${base}${p}`);
     check(r.status === 404, `${p} should be 404 in production, got ${r.status}`);
   }
+  const devSignin = await fetch(`${base}/api/dev/signin`, { method: "POST" });
+  check(devSignin.status === 404, `POST /api/dev/signin should be 404 in production, got ${devSignin.status}`);
+  check(devSignin.headers.getSetCookie().length === 0, "POST /api/dev/signin set a cookie in production");
   const make = await fetch(`${base}/make`);
   check(make.redirected && new URL(make.url).pathname === "/signin", `/make should redirect to /signin when signed out, got ${make.status} at ${make.url}`);
   const place = await fetch(`${base}/api/place`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
