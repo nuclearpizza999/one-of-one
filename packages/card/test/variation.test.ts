@@ -159,10 +159,18 @@ describe("deriveVariation", () => {
   it("coerces the seed to unsigned 32-bit", () => {
     expect(deriveVariation({ ...inputs, seed: -1 }).seed).toBe(0xffffffff);
   });
-  it("uses every registered intro for some seed", () => {
-    const ids = new Set(INTROS.map((i) => i.id));
-    for (let s = 0; s < 30; s += 1) ids.delete(deriveVariation({ ...inputs, seed: s }).intro);
-    expect(ids.size).toBe(0);
+  it("uses every assignable intro for some seed and no other", () => {
+    const ids = new Set(INTROS.filter((i) => i.assignable).map((i) => i.id));
+    const seen = new Set<string>();
+    for (let s = 0; s < 30; s += 1) seen.add(deriveVariation({ ...inputs, seed: s }).intro);
+    expect(seen).toEqual(ids);
+  });
+  it("never assigns the founders-only motions", () => {
+    const assigned = new Set(Object.values(TIERS).map((t) => t.motion));
+    for (const m of ["glow", "twinkle", "petals"] as const) {
+      expect(MOTIONS[m]).toBeDefined();
+      expect(assigned.has(m)).toBe(false);
+    }
   });
 });
 

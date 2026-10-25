@@ -229,6 +229,56 @@
   to { transform: rotateY(0deg); }
 }
 
+/* Fade: the card fades in while settling from a slightly smaller scale. */
+.oo-intro-fade {
+  animation: oo-fade-scale 0.9s cubic-bezier(0.25, 0.6, 0.3, 1) both;
+}
+.oo-intro-fade .oo-lines,
+.oo-intro-fade .oo-num {
+  opacity: 0;
+  animation: oo-fade-in 0.5s ease-out 0.7s forwards;
+}
+@keyframes oo-fade-scale {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Slide: the frame slides in from the left and the photo wipes open left to right. */
+.oo-intro-slide {
+  animation: oo-slide 0.8s cubic-bezier(0.15, 0.7, 0.25, 1) both;
+}
+.oo-intro-slide .oo-photo-wrap {
+  clip-path: inset(0 100% 0 0);
+  animation: oo-reveal-right 0.9s cubic-bezier(0.6, 0, 0.2, 1) 0.25s forwards;
+}
+.oo-intro-slide .oo-lines,
+.oo-intro-slide .oo-num {
+  opacity: 0;
+  animation: oo-fade-in 0.5s ease-out 0.9s forwards;
+}
+@keyframes oo-slide {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes oo-reveal-right {
+  to { clip-path: inset(0 0 0 0); }
+}
+
+/* Drop: the frame drops from above and settles with a small overshoot. */
+.oo-intro-drop {
+  animation: oo-drop 0.9s cubic-bezier(0.3, 1.35, 0.55, 1) both;
+}
+.oo-intro-drop .oo-lines,
+.oo-intro-drop .oo-num {
+  opacity: 0;
+  animation: oo-fade-in 0.5s ease-out 0.8s forwards;
+}
+@keyframes oo-drop {
+  from { transform: translateY(-60px); opacity: 0; }
+  30% { opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+
 /*
  * Sheen: a slow light sweep over the whole mat. Screen only; the print never
  * carries it. The photo and the caption sit above the border layer, so the sweep
@@ -247,6 +297,76 @@
   to { background-position: 0 0; }
 }
 
+/*
+ * Glow, Twinkle and Petals: founders only, never assigned. Like the sheen they
+ * draw in the border layer, under the photo and the caption, and only lighten or
+ * faintly tint the mat, so the caption contrast floor holds.
+ */
+
+/* Glow: a soft warm light around the photo that slowly breathes. */
+.oo-motion-glow .oo-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 60% at 50% 42%, rgba(255, 228, 176, 0.32) 0%, rgba(255, 236, 200, 0.14) 55%, transparent 80%);
+  opacity: 0.25;
+  animation: oo-glow 4s ease-in-out infinite alternate;
+}
+@keyframes oo-glow {
+  to { opacity: 1; }
+}
+
+/*
+ * Twinkle: seven small star points in the top and side mats, one layer each in a
+ * single pseudo-element. One registered number runs 0 to 1; each star's alpha is
+ * a sine of it at its own phase, so they fade in and out on staggered timings.
+ */
+@property --oo-twinkle {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+.oo-motion-twinkle .oo-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  --oo-star: 2.6cqw;
+  background:
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.00) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.00) * 1turn)))) 0.35cqw, transparent 1.1cqw) 14cqw 1.2cqw / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.43) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.43) * 1turn)))) 0.3cqw, transparent 1cqw) 47cqw 1.2cqw / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.71) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.71) * 1turn)))) 0.35cqw, transparent 1.1cqw) 81cqw 1.2cqw / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.14) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.14) * 1turn)))) 0.3cqw, transparent 1cqw) 1.2cqw 28% / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.86) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.86) * 1turn)))) 0.35cqw, transparent 1.1cqw) 1.2cqw 62% / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.29) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.29) * 1turn)))) 0.3cqw, transparent 1cqw) calc(100% - 1.2cqw) 45% / var(--oo-star) var(--oo-star) no-repeat,
+    radial-gradient(circle, rgba(255, 252, 240, calc(max(0, sin((var(--oo-twinkle) + 0.57) * 1turn)))) 0, rgba(212, 176, 96, calc(0.55 * max(0, sin((var(--oo-twinkle) + 0.57) * 1turn)))) 0.35cqw, transparent 1.1cqw) calc(100% - 1.2cqw) 72% / var(--oo-star) var(--oo-star) no-repeat;
+  animation: oo-twinkle 3s linear infinite;
+}
+@keyframes oo-twinkle {
+  from { --oo-twinkle: 0; }
+  to { --oo-twinkle: 1; }
+}
+
+/*
+ * Petals: four soft blush ovals drifting slowly down the mat. Each layer is a
+ * tall tile repeated vertically; moving every tile down by its own height loops
+ * without a seam, with a slight sideways sway on the way.
+ */
+.oo-motion-petals .oo-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  --oo-petal: radial-gradient(ellipse 0.85cqw 0.5cqw at 50% 50%, rgba(226, 158, 172, 0.42) 0%, rgba(226, 158, 172, 0.2) 60%, transparent 100%);
+  background-image: var(--oo-petal), var(--oo-petal), var(--oo-petal), var(--oo-petal);
+  background-repeat: repeat-y;
+  background-size: 4cqw 72cqw, 4cqw 72cqw, 4cqw 72cqw, 4cqw 72cqw;
+  animation: oo-petals 12s linear infinite;
+}
+@keyframes oo-petals {
+  from { background-position: 0.5cqw 0, 95.5cqw 30cqw, 28cqw 50cqw, 66cqw 14cqw; }
+  50% { background-position: 1.1cqw 36cqw, 94.9cqw 66cqw, 28.8cqw 86cqw, 65.2cqw 50cqw; }
+  to { background-position: 0.5cqw 72cqw, 95.5cqw 102cqw, 28cqw 122cqw, 66cqw 86cqw; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .oo-intro-rise,
   .oo-intro-rise .oo-photo-wrap,
@@ -257,7 +377,17 @@
   .oo-intro-develop .oo-num,
   .oo-intro-flip .oo-card,
   .oo-intro-flip .oo-lines,
-  .oo-intro-flip .oo-num {
+  .oo-intro-flip .oo-num,
+  .oo-intro-fade,
+  .oo-intro-fade .oo-lines,
+  .oo-intro-fade .oo-num,
+  .oo-intro-slide,
+  .oo-intro-slide .oo-photo-wrap,
+  .oo-intro-slide .oo-lines,
+  .oo-intro-slide .oo-num,
+  .oo-intro-drop,
+  .oo-intro-drop .oo-lines,
+  .oo-intro-drop .oo-num {
     animation: none !important;
     clip-path: none !important;
     filter: none !important;
@@ -267,7 +397,10 @@
   .oo-intro-flip .oo-card::after {
     display: none;
   }
-  .oo-motion-sheen .oo-border::after {
+  .oo-motion-sheen .oo-border::after,
+  .oo-motion-glow .oo-border::after,
+  .oo-motion-twinkle .oo-border::after,
+  .oo-motion-petals .oo-border::after {
     animation: none !important;
     display: none;
   }

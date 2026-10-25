@@ -53,6 +53,10 @@ export interface MotionDef {
 export const MOTIONS = {
   none: { id: "none", label: "None", className: null },
   sheen: { id: "sheen", label: "Sheen", className: "oo-motion-sheen" },
+  // Founders only: no tier points at these, so assignment never reaches them.
+  glow: { id: "glow", label: "Glow", className: "oo-motion-glow" },
+  twinkle: { id: "twinkle", label: "Twinkle", className: "oo-motion-twinkle" },
+  petals: { id: "petals", label: "Petals", className: "oo-motion-petals" },
 } as const satisfies Record<string, MotionDef>;
 export type Motion = keyof typeof MOTIONS;
 
