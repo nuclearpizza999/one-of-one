@@ -43,10 +43,28 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
 
   return (
     <CardScreen
+      cardId={row.id}
+      isFounder={await readIsFounder(supabase)}
       photo={{ src: rendition.data.signedUrl, width: row.photo_w, height: row.photo_h }}
       originalUrl={original.data.signedUrl}
       caption={{ place: row.caption_place, date: row.caption_date, coords: row.caption_coords }}
       variation={{ ...row.variation, intro: row.intro, seed: Number(row.variation_seed) }}
     />
   );
+}
+
+/**
+ * Whether the signed-in user is a founder, from their own users row. Any error reads as false,
+ * including a database that does not have the column yet.
+ */
+async function readIsFounder(supabase: Awaited<ReturnType<typeof createServerSupabase>>): Promise<boolean> {
+  try {
+    const { data: auth, error: authError } = await supabase.auth.getUser();
+    if (authError || !auth.user) return false;
+    const { data, error } = await supabase.from("users").select("is_founder").eq("id", auth.user.id).maybeSingle();
+    if (error || !data) return false;
+    return (data as { is_founder?: unknown }).is_founder === true;
+  } catch {
+    return false;
+  }
 }

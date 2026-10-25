@@ -1,30 +1,66 @@
 "use client";
 
-import { Card, type Variation } from "@one-of-one/card";
+import { Card, type Variation, type VariationOverrides, withOverrides } from "@one-of-one/card";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
+import { DesignPanel } from "@/components/DesignPanel";
 import { Icon } from "@/components/Icon";
 import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
+import { updateCardDesign } from "@/lib/designs";
 import { loadImage } from "@/lib/photo";
 import { printCard } from "@/lib/print";
+import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export interface CardScreenProps {
+  cardId: string;
+  /** Read on the server from the signed-in user's own row; false on any error. */
+  isFounder: boolean;
   photo: { src: string; width: number; height: number };
   originalUrl: string;
   caption: { place: string; date: string; coords: string };
   variation: Variation;
 }
 
-/** A saved card, read-only: the same card and strip as Make, with Back in place of Cancel. */
-export function CardScreen({ photo, originalUrl, caption, variation }: CardScreenProps) {
+/**
+ * A saved card: the same card and strip as Make, with Back in place of Cancel. Read-only for everyone
+ * but a founder, who gets the design panel; each pick is written to the row at once.
+ */
+export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, variation: stored }: CardScreenProps) {
   const wall = useWall();
   const [replayKey, setReplayKey] = useState(0);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [overrides, setOverrides] = useState<VariationOverrides>({});
+  const [borderOnPrint, setBorderOnPrint] = useState(true);
+  // Picks are written one after another, so the row ends with the last pick whatever the network does.
+  const saving = useRef<Promise<void>>(Promise.resolve());
+  const lastPick = useRef(0);
+
+  // The photo's own palette is not kept with the card, so "Photo" can only mean the stored palette when
+  // the card was saved with the Photo tone; otherwise it resolves to the neutral palette.
+  const photoPalette = stored.tone === "photo" ? stored.palette : null;
+  const variation = withOverrides(stored, overrides, photoPalette);
+
+  function onOverrides(next: VariationOverrides) {
+    setOverrides(next);
+    if (next.intro !== overrides.intro) setReplayKey((k) => k + 1);
+    const design = withOverrides(stored, next, photoPalette);
+    const pick = ++lastPick.current;
+    setStatus("Saving…");
+    saving.current = saving.current.then(async () => {
+      let line = "Saved.";
+      try {
+        await updateCardDesign(createBrowserSupabase(), cardId, design);
+      } catch {
+        line = "Couldn't save the design. Try again.";
+      }
+      if (pick === lastPick.current) setStatus(line);
+    });
+  }
 
   async function onPrint() {
     if (busy) return;
@@ -42,7 +78,7 @@ export function CardScreen({ photo, originalUrl, caption, variation }: CardScree
           date: caption.date,
           coords: caption.coords,
           variation,
-          borderOnPrint: true,
+          borderOnPrint,
         }),
       );
     } catch {
@@ -88,6 +124,15 @@ export function CardScreen({ photo, originalUrl, caption, variation }: CardScree
           ]}
         />
       </div>
+      {isFounder ? (
+        <DesignPanel
+          derived={stored}
+          overrides={overrides}
+          onChange={onOverrides}
+          borderOnPrint={borderOnPrint}
+          onBorderOnPrint={setBorderOnPrint}
+        />
+      ) : null}
     </AppFrame>
   );
 }

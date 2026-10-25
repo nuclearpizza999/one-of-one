@@ -44,3 +44,34 @@ test("anyone else's card is saved with the assigned design, whatever the panel s
   const { assigned, saved } = await saveWithFoil(page);
   expect(saved).toBe(assigned);
 });
+
+test("a founder restyles a saved card from its page, and each pick is saved", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+
+  const card = page.locator("figure.oo-card");
+  const frame = page.locator(".oo-frame");
+  const panel = page.locator("[data-design-panel]");
+  await panel.locator(".design-field", { hasText: "Texture" }).getByRole("button", { name: "Grain" }).click();
+  await expect(card).toHaveAttribute("data-texture", "grain");
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(card).toHaveAttribute("data-texture", "grain");
+
+  await panel.locator(".design-field", { hasText: "Intro" }).getByRole("button", { name: "Flip" }).click();
+  await expect(frame).toHaveClass(/oo-intro-flip/);
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(frame).toHaveClass(/oo-intro-flip/);
+  await expect(card).toHaveAttribute("data-texture", "grain");
+});
+
+test("anyone else's saved card has no design panel", async ({ page }) => {
+  await signIn(page, freshEmail());
+  await saveWithFoil(page);
+  await expect(page.locator("figure.oo-card")).toBeVisible();
+  await expect(page.locator("[data-design-panel]")).toHaveCount(0);
+});
