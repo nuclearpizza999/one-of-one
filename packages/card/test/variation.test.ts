@@ -14,9 +14,12 @@ import {
   deriveTone,
   deriveVariation,
   paletteFor,
+  seasonStep,
+  sunStep,
   variationSeed,
   withOverrides,
 } from "../src/variation";
+import { captureInstant, sunElevation } from "../src/sun";
 
 const at = (month: number, hour: number) => new Date(2026, month, 15, hour, 0, 0);
 // Clears the caption contrast floor as written, so paletteFor returns it unchanged.
@@ -46,30 +49,94 @@ describe("registries", () => {
   });
 });
 
+const SEOUL = { lat: 37.5563, lng: 126.9236 };
+const SYDNEY = { lat: -33.8688, lng: 151.2093 };
+const SINGAPORE = { lat: 1.3521, lng: 103.8198 };
+const noGps = (d: Date | null) => deriveTone({ takenAt: d, gps: null, utcOffsetMinutes: null });
+const atPlace = (d: Date, gps: { lat: number; lng: number }, offset: number | null) => deriveTone({ takenAt: d, gps, utcOffsetMinutes: offset });
+/** The first minute of a day, at a place and offset, whose sun elevation is inside [lo, hi]. */
+function minuteWithSun(y: number, mo: number, d: number, offset: number, gps: { lat: number; lng: number }, lo: number, hi: number, fromHour: number): Date {
+  for (let m = fromHour * 60; m < 24 * 60; m += 1) {
+    const at = new Date(y, mo, d, Math.floor(m / 60), m % 60);
+    const e = sunElevation(captureInstant(at, offset), gps.lat, gps.lng);
+    if (e >= lo && e <= hi) return at;
+  }
+  throw new Error("no minute found");
+}
+
+describe("sunStep", () => {
+  it("is the photo's colour in daylight, warm in the golden band and cool below it", () => {
+    expect(sunStep(30)).toBe(1);
+    expect(sunStep(6.01)).toBe(1);
+    expect(sunStep(6)).toBe(2);
+    expect(sunStep(0)).toBe(2);
+    expect(sunStep(-4)).toBe(2);
+    expect(sunStep(-4.01)).toBe(0);
+    expect(sunStep(-40)).toBe(0);
+  });
+});
+
+describe("seasonStep", () => {
+  it("is warm in the northern summer and cool in the northern winter", () => {
+    expect(seasonStep(6, SEOUL.lat)).toBe(1);
+    expect(seasonStep(0, SEOUL.lat)).toBe(-1);
+    expect(seasonStep(3, SEOUL.lat)).toBe(0);
+  });
+  it("flips in the southern hemisphere", () => {
+    expect(seasonStep(6, SYDNEY.lat)).toBe(-1);
+    expect(seasonStep(0, SYDNEY.lat)).toBe(1);
+  });
+  it("is nothing in the tropics", () => {
+    for (let m = 0; m < 12; m += 1) expect(seasonStep(m, SINGAPORE.lat)).toBe(0);
+    expect(seasonStep(6, 23.43)).toBe(0);
+    expect(seasonStep(6, 23.44)).toBe(1);
+  });
+});
+
 describe("deriveTone", () => {
-  it("is warm at golden hours in a neutral month", () => {
-    expect(deriveTone(at(2, 7))).toBe("warm");
-    expect(deriveTone(at(2, 18))).toBe("warm");
+  it("uses the hour ranges and no season without GPS", () => {
+    expect(noGps(at(2, 7))).toBe("warm");
+    expect(noGps(at(2, 18))).toBe("warm");
+    expect(noGps(at(2, 12))).toBe("photo");
+    expect(noGps(at(4, 2))).toBe("cool");
+    expect(noGps(at(4, 23))).toBe("cool");
+    expect(noGps(at(0, 12))).toBe("photo");
+    expect(noGps(at(6, 12))).toBe("photo");
   });
-  it("is neutral in the middle of the day", () => {
-    expect(deriveTone(at(2, 12))).toBe("neutral");
+  it("uses the hour ranges with the season when there is GPS but no time zone", () => {
+    expect(atPlace(at(6, 12), SEOUL, null)).toBe("warm");
+    expect(atPlace(at(0, 12), SEOUL, null)).toBe("cool");
+    expect(atPlace(at(11, 7), SEOUL, null)).toBe("photo");
   });
-  it("is cool at night", () => {
-    expect(deriveTone(at(4, 2))).toBe("cool");
-    expect(deriveTone(at(4, 23))).toBe("cool");
+  it("follows the sun with GPS and a time zone", () => {
+    expect(atPlace(new Date(2026, 2, 15, 12, 30), SEOUL, 540)).toBe("photo");
+    expect(atPlace(new Date(2026, 2, 15, 0, 30), SEOUL, 540)).toBe("cool");
+    expect(atPlace(minuteWithSun(2026, 2, 15, 540, SEOUL, 0, 3, 15), SEOUL, 540)).toBe("warm");
+    expect(atPlace(minuteWithSun(2026, 2, 15, 540, SEOUL, -6, -4.5, 15), SEOUL, 540)).toBe("cool");
   });
-  it("shifts one step cool in winter and one step warm in summer, clamped", () => {
-    expect(deriveTone(at(11, 7))).toBe("neutral");
-    expect(deriveTone(at(0, 12))).toBe("cool");
-    expect(deriveTone(at(0, 2))).toBe("cool");
-    expect(deriveTone(at(6, 12))).toBe("warm");
-    expect(deriveTone(at(6, 7))).toBe("warm");
+  it("adds the season by hemisphere and clamps", () => {
+    expect(atPlace(new Date(2026, 5, 21, 12, 34), SEOUL, 540)).toBe("warm");
+    expect(atPlace(new Date(2026, 6, 15, 12, 0), SYDNEY, 600)).toBe("cool");
+    expect(atPlace(new Date(2026, 0, 15, 12, 0), SYDNEY, 600)).toBe("warm");
+    expect(atPlace(minuteWithSun(2026, 5, 21, 540, SEOUL, 0, 3, 15), SEOUL, 540)).toBe("warm");
+    expect(atPlace(new Date(2026, 0, 15, 0, 30), SEOUL, 540)).toBe("cool");
   });
-  it("is neutral without a capture time", () => {
-    expect(deriveTone(null)).toBe("neutral");
+  it("gives no season in the tropics", () => {
+    expect(atPlace(new Date(2026, 0, 15, 13, 0), SINGAPORE, 480)).toBe("photo");
+    expect(atPlace(new Date(2026, 6, 15, 13, 0), SINGAPORE, 480)).toBe("photo");
   });
-  it("never assigns the photo tone by itself", () => {
-    for (let m = 0; m < 12; m += 1) for (let h = 0; h < 24; h += 1) expect(deriveTone(at(m, h))).not.toBe("photo");
+  it("is the photo's colour without a capture time", () => {
+    expect(noGps(null)).toBe("photo");
+    expect(deriveTone({ takenAt: null, gps: SEOUL, utcOffsetMinutes: 540 })).toBe("photo");
+  });
+  it("never assigns neutral, which only a grey photo reaches through its palette", () => {
+    for (let m = 0; m < 12; m += 1) {
+      for (let h = 0; h < 24; h += 1) {
+        expect(noGps(at(m, h))).not.toBe("neutral");
+        expect(atPlace(at(m, h), SEOUL, 540)).not.toBe("neutral");
+        expect(atPlace(at(m, h), SYDNEY, null)).not.toBe("neutral");
+      }
+    }
   });
 });
 
@@ -137,6 +204,8 @@ describe("deriveVariation", () => {
     number: 7,
     placeKind: "city",
     photoPalette: null,
+    gps: null,
+    utcOffsetMinutes: null,
   };
   it("is deterministic", () => {
     expect(deriveVariation(inputs)).toEqual(deriveVariation({ ...inputs }));
@@ -175,8 +244,9 @@ describe("deriveVariation", () => {
 });
 
 describe("withOverrides", () => {
+  // Noon derives the photo tone, so the base is built from the same sample the overrides are given.
   const base = deriveVariation({
-    seed: 42, takenAt: at(2, 12), camera: null, number: null, placeKind: null, photoPalette: null,
+    seed: 42, takenAt: at(2, 12), camera: null, number: null, placeKind: null, photoPalette, gps: null, utcOffsetMinutes: null,
   });
   it("returns an equal variation for no overrides", () => {
     expect(withOverrides(base, {}, photoPalette)).toEqual(base);
@@ -195,7 +265,7 @@ describe("withOverrides", () => {
     expect(withOverrides(base, { tier: "foil" }, null).texture).toBe(VARIATION_RULES.texture.foil);
     expect(withOverrides(base, { tier: "animated" }, null).texture).toBe(VARIATION_RULES.texture.foil);
     expect(withOverrides(base, { tier: "fine" }, null).texture).toBe(base.texture);
-    const foilBase = deriveVariation({ seed: 42, takenAt: at(2, 12), camera: null, number: 50, placeKind: null, photoPalette: null });
+    const foilBase = deriveVariation({ seed: 42, takenAt: at(2, 12), camera: null, number: 50, placeKind: null, photoPalette: null, gps: null, utcOffsetMinutes: null });
     expect(foilBase.texture).toBe(VARIATION_RULES.texture.foil);
     expect(withOverrides(foilBase, { tier: "standard" }, null).texture).toBe(VARIATION_RULES.texture.fallback);
     expect(withOverrides(base, { tier: "foil", texture: "worn" }, null).texture).toBe("worn");
@@ -225,13 +295,16 @@ describe("variationSeed", () => {
     expect(variationSeed({ ...facts, camera: null })).not.toBe(base);
     expect(variationSeed({ ...facts, camera: { make: "Apple", model: "iPhone 16" } })).not.toBe(base);
   });
-  it("folds the card id in when there is one, and is unchanged without it", () => {
-    const without = variationSeed(facts);
-    expect(variationSeed({ ...facts, cardId: undefined })).toBe(without);
-    const a = variationSeed({ ...facts, cardId: "7c1d9a6e-0d3f-4f7e-9c3a-0b6f8a9e1b2c" });
-    const b = variationSeed({ ...facts, cardId: "c1b2a3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d" });
-    expect(a).not.toBe(without);
-    expect(a).not.toBe(b);
-    expect(a).toBe(variationSeed({ ...facts, cardId: "7c1d9a6e-0d3f-4f7e-9c3a-0b6f8a9e1b2c" }));
+  it("hashes the photo's facts alone, so two cards of one photo share a seed", () => {
+    const fnv1a = (s: string) => {
+      let hash = 0x811c9dc5;
+      for (let i = 0; i < s.length; i += 1) {
+        hash ^= s.charCodeAt(i);
+        hash = Math.imul(hash, 0x01000193) >>> 0;
+      }
+      return hash >>> 0;
+    };
+    expect(variationSeed(facts)).toBe(fnv1a("123456:3024:4032:1782000000000:Apple|iPhone 15 Pro"));
+    expect(variationSeed({ ...facts, camera: null, takenAtMs: null })).toBe(fnv1a("123456:3024:4032:0:|"));
   });
 });

@@ -15,6 +15,8 @@ export {
   deriveTone,
   deriveVariation,
   paletteFor,
+  seasonStep,
+  sunStep,
   variationSeed,
   withOverrides,
 } from "./variation";
@@ -28,6 +30,7 @@ export type {
   TierDef,
   Tone,
   ToneDef,
+  ToneFacts,
   Variation,
   VariationInputs,
   VariationOverrides,

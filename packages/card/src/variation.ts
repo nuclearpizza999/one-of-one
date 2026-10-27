@@ -1,5 +1,6 @@
 import { withCaptionContrast } from "./contrast";
 import { type IntroId, assignIntro } from "./intros";
+import { captureInstant, sunElevation } from "./sun";
 import type { Texture } from "./textures";
 
 /*
@@ -97,6 +98,10 @@ export interface VariationInputs {
   placeKind: PlaceKindLike | null;
   /** Sampled from the decoded photo by the app; null when unavailable. */
   photoPalette: Palette | null;
+  /** From EXIF; null when the photo carries no position. */
+  gps: { lat: number; lng: number } | null;
+  /** From EXIF; null when the photo records no time zone. */
+  utcOffsetMinutes: number | null;
 }
 
 /**
@@ -106,9 +111,13 @@ export interface VariationInputs {
 export const VARIATION_RULES = {
   tone: {
     warmHours: [[5, 9], [17, 20]],
-    neutralHours: [[10, 16]],
+    photoHours: [[10, 16]],
     coolMonths: [10, 11, 0, 1],
     warmMonths: [5, 6, 7],
+    /** Sun elevation in degrees: above dayAbove is day, from coolBelow up to dayAbove golden hour, below it blue hour and night. */
+    sun: { dayAbove: 6, coolBelow: -4 },
+    /** Within this absolute latitude there is no season step. */
+    tropicLatitude: 23.44,
   },
   tier: [
     { upTo: 10, tier: "animated" },
@@ -126,31 +135,66 @@ export const VARIATION_RULES = {
 } as const satisfies {
   tone: {
     warmHours: readonly (readonly [number, number])[];
-    neutralHours: readonly (readonly [number, number])[];
+    photoHours: readonly (readonly [number, number])[];
     coolMonths: readonly number[];
     warmMonths: readonly number[];
+    sun: { dayAbove: number; coolBelow: number };
+    tropicLatitude: number;
   };
   tier: readonly { upTo: number; tier: Tier }[];
   texture: { fujiMakePrefix: string; fuji: Texture; landmark: Texture; fine: Texture; fallback: Texture; foil: Texture };
 };
 
-/** Preset tones in cool-to-warm order; the rule steps along it. The photo tone is never assigned by the rule. */
-const TONE_ORDER = ["cool", "neutral", "warm"] as const satisfies readonly Tone[];
+/** The tones the rule steps along, cool to warm. Neutral is never assigned: a grey photo reaches it through its palette. */
+const TONE_ORDER = ["cool", "photo", "warm"] as const satisfies readonly Tone[];
 
 function inRanges(value: number, ranges: readonly (readonly [number, number])[]): boolean {
   return ranges.some(([lo, hi]) => value >= lo && value <= hi);
 }
 
-export function deriveTone(takenAt: Date | null): Tone {
-  if (!takenAt) return "neutral";
+export interface ToneFacts {
+  takenAt: Date | null;
+  gps: { lat: number; lng: number } | null;
+  /** The capture time's UTC offset from EXIF; null when the photo does not record one. */
+  utcOffsetMinutes: number | null;
+}
+
+/** The step along TONE_ORDER the sun gives: 1 the photo's colour by day, 2 warm in the golden band, 0 cool in blue hour and at night. */
+export function sunStep(elevation: number): number {
+  const { sun } = VARIATION_RULES.tone;
+  if (elevation > sun.dayAbove) return 1;
+  if (elevation >= sun.coolBelow) return 2;
+  return 0;
+}
+
+/** One step warm in summer, one cool in winter, by the photo's own hemisphere; nothing in the tropics. `month` is 0 to 11. */
+export function seasonStep(month: number, lat: number): number {
   const { tone } = VARIATION_RULES;
-  const hour = takenAt.getHours();
-  const month = takenAt.getMonth();
-  let index = inRanges(hour, tone.warmHours) ? 2 : inRanges(hour, tone.neutralHours) ? 1 : 0;
+  if (Math.abs(lat) < tone.tropicLatitude) return 0;
+  const northern = lat < 0 ? (month + 6) % 12 : month;
   const coolMonths: readonly number[] = tone.coolMonths;
   const warmMonths: readonly number[] = tone.warmMonths;
-  if (coolMonths.includes(month)) index -= 1;
-  else if (warmMonths.includes(month)) index += 1;
+  if (coolMonths.includes(northern)) return -1;
+  if (warmMonths.includes(northern)) return 1;
+  return 0;
+}
+
+/**
+ * The sun's real height when the photo knows where and when it was taken (GPS and
+ * a UTC offset), otherwise the hour ranges; then the season, only with GPS, since
+ * without it the hemisphere is unknown.
+ */
+export function deriveTone(f: ToneFacts): Tone {
+  if (!f.takenAt) return "photo";
+  const { tone } = VARIATION_RULES;
+  let index: number;
+  if (f.gps && f.utcOffsetMinutes !== null) {
+    index = sunStep(sunElevation(captureInstant(f.takenAt, f.utcOffsetMinutes), f.gps.lat, f.gps.lng));
+  } else {
+    const hour = f.takenAt.getHours();
+    index = inRanges(hour, tone.warmHours) ? 2 : inRanges(hour, tone.photoHours) ? 1 : 0;
+  }
+  if (f.gps) index += seasonStep(f.takenAt.getMonth(), f.gps.lat);
   return TONE_ORDER[Math.max(0, Math.min(TONE_ORDER.length - 1, index))]!;
 }
 
@@ -176,7 +220,7 @@ export function deriveTexture(
 /** Pure and deterministic: the same inputs always give the same variation. Users never pick any of it. */
 export function deriveVariation(inputs: VariationInputs): Variation {
   const seed = inputs.seed >>> 0;
-  const tone = deriveTone(inputs.takenAt);
+  const tone = deriveTone({ takenAt: inputs.takenAt, gps: inputs.gps, utcOffsetMinutes: inputs.utcOffsetMinutes });
   const tier = deriveTier(inputs.number);
   const texture = deriveTexture(tier, inputs.camera, inputs.placeKind);
   return {
@@ -223,17 +267,14 @@ export interface SeedFacts {
   height: number;
   takenAtMs: number | null;
   camera: { make: string; model: string } | null;
-  /** The card's id, made when the photo is picked, so two cards of one photo differ. Absent in the gallery and the dev card. */
-  cardId?: string;
 }
 
 /**
- * FNV-1a over the photo's facts and, once it exists, the card id (SPEC.md: the
- * variation is a function of the card id plus the inputs). Without an id the
- * same photo always gets the same variation on the same device.
+ * FNV-1a over the photo's own facts. The card id is not part of it (SPEC.md,
+ * decided Oct 26, 2026): the same photo always gets the same card.
  */
 export function variationSeed(f: SeedFacts): number {
-  const input = `${f.sizeBytes}:${f.width}:${f.height}:${f.takenAtMs ?? 0}:${f.camera?.make ?? ""}|${f.camera?.model ?? ""}${f.cardId ? `:${f.cardId}` : ""}`;
+  const input = `${f.sizeBytes}:${f.width}:${f.height}:${f.takenAtMs ?? 0}:${f.camera?.make ?? ""}|${f.camera?.model ?? ""}`;
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i += 1) {
     hash ^= input.charCodeAt(i);
