@@ -49,6 +49,7 @@ Layout and type are fixed on every card; only the border varies, the way a tradi
 - Deterministic. The same photo always gets the same card: the variation is a function of the photo's own facts, the inputs above, and is re-derived when the number is assigned. The card id does not enter it (decided Oct 26, 2026).
 - Procedural first. Textures are generated in code, seeded by a hash of the photo's facts (file size, pixel size, capture time, camera), with a small hand-made set for the rare tiers. No illustration pipeline per card.
 - Facts first, chance later. For now every visible difference between two cards comes from the photo's facts, so a card's look says something true about its photo and cannot be rerolled by picking the photo again. Chance, a per-card seed that makes two cards of one photo or two near-identical photos differ, is a later priority (decided Oct 26, 2026).
+- Tilt shine, next. After the type look (each card's colour and motifs read from the photo, being designed Oct 26, 2026), the next refinement is a foil shine that moves as the phone tilts, on screen only and never on prints. iPhone browsers ask permission before a page can read tilt, so the shine starts on a tap; reduced-motion users get none.
 - Revealed by the intro. Rise, Develop and Flip are the moment you see what the card got.
 - Print. Motion is screen-only. Every variation has a static version, and textures must hold up at print resolution so screen and print still match.
 - Not for sale. No random packs and no paid variations.
