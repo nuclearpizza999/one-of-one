@@ -13,6 +13,8 @@ export interface PhotoMetadata {
   gps: { lat: number; lng: number } | null;
   /** EXIF Make and Model, trimmed; null unless both are present. */
   camera: { make: string; model: string } | null;
+  /** The capture time's UTC offset in minutes from EXIF OffsetTimeOriginal (or OffsetTimeDigitized for a CreateDate); null when absent. */
+  utcOffsetMinutes: number | null;
 }
 
 /**
@@ -32,6 +34,18 @@ export function plausibleDate(value: unknown, now = Date.now()): Date | null {
   return value;
 }
 
+/** An EXIF offset string, "+09:00" or "-05:30", as minutes east of UTC; null for anything else. */
+export function parseUtcOffset(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const m = /^([+-])(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const hours = Number(m[2]);
+  const minutes = Number(m[3]);
+  if (minutes > 59 || hours * 60 + minutes > 14 * 60) return null;
+  const total = hours * 60 + minutes;
+  return m[1] === "-" ? -total : total;
+}
+
 /** A File or Blob in the browser, a Buffer or Uint8Array in Node. Never throws. */
 export async function readPhotoMetadata(
   input: Blob | ArrayBuffer | Uint8Array,
@@ -41,13 +55,16 @@ export async function readPhotoMetadata(
   let dateSource: DateSource = "none";
   let gps: PhotoMetadata["gps"] = null;
   let camera: PhotoMetadata["camera"] = null;
+  let utcOffsetMinutes: number | null = null;
 
   try {
-    const out = await parse(input, { tiff: true, exif: true, pick: ["DateTimeOriginal", "CreateDate", "Make", "Model"] });
-    const d = plausibleDate(out?.DateTimeOriginal) ?? plausibleDate(out?.CreateDate);
+    const out = await parse(input, { tiff: true, exif: true, pick: ["DateTimeOriginal", "CreateDate", "OffsetTimeOriginal", "OffsetTimeDigitized", "Make", "Model"] });
+    const original = plausibleDate(out?.DateTimeOriginal);
+    const d = original ?? plausibleDate(out?.CreateDate);
     if (d) {
       takenAt = d;
       dateSource = "exif";
+      utcOffsetMinutes = parseUtcOffset(original ? out?.OffsetTimeOriginal : out?.OffsetTimeDigitized);
     }
     const make = typeof out?.Make === "string" ? out.Make.trim() : "";
     const model = typeof out?.Model === "string" ? out.Model.trim() : "";
@@ -70,7 +87,7 @@ export async function readPhotoMetadata(
     dateSource = "file";
   }
 
-  return { takenAt, dateSource, gps, camera };
+  return { takenAt, dateSource, gps, camera, utcOffsetMinutes };
 }
 
 /** The capture time for storage: `YYYY-MM-DD HH:MM:SS` from the local getters, no zone, so the day never shifts. */
