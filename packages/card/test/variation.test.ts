@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CAPTION_INK, CAPTION_MIN_CONTRAST, COORDS_INK, COORDS_MIN_CONTRAST, contrastRatio } from "../src/contrast";
+import { hexToHsl } from "../src/colour";
+import { CAPTION_INK, CAPTION_MIN_CONTRAST, COORDS_INK, COORDS_MIN_CONTRAST, contrastRatio, withCaptionContrast } from "../src/contrast";
 import { INTROS, assignIntro } from "../src/intros";
 import {
   MOTIONS,
@@ -8,16 +9,19 @@ import {
   TONES,
   VARIATION_RULES,
   type Palette,
+  type Tone,
   type VariationInputs,
   deriveTexture,
   deriveTier,
   deriveTone,
   deriveVariation,
+  nudgePalette,
   paletteFor,
   seasonStep,
   sunStep,
   variationSeed,
   withOverrides,
+  withWash,
 } from "../src/variation";
 import { captureInstant, sunElevation } from "../src/sun";
 
@@ -37,15 +41,13 @@ describe("registries", () => {
   it("tiers point at registered motions", () => {
     for (const t of Object.values(TIERS)) expect(MOTIONS[t.motion]).toBeDefined();
   });
-  it("preset tones carry colours and the photo tone does not", () => {
-    for (const tone of Object.values(TONES)) {
-      if (tone.source === "preset") {
-        expect(tone.tint).toMatch(/^#[0-9a-f]{6}$/);
-        expect(tone.foil).toHaveLength(2);
-      } else {
-        expect(tone.id).toBe("photo");
-      }
-    }
+  it("tones are nudges of the photo's colour, the photo's colour itself, or the neutral grey", () => {
+    expect(Object.keys(TONES)).toEqual(["warm", "photo", "cool", "neutral"]);
+    expect(TONES.warm).toMatchObject({ source: "nudge", direction: 1 });
+    expect(TONES.cool).toMatchObject({ source: "nudge", direction: -1 });
+    expect(TONES.photo.source).toBe("photo");
+    expect(TONES.neutral.source).toBe("neutral");
+    for (const tone of Object.values(TONES)) expect(JSON.stringify(tone)).not.toMatch(/#[0-9a-f]{3,6}/i);
   });
 });
 
@@ -173,26 +175,81 @@ describe("deriveTexture", () => {
   });
 });
 
+const rgb = (hex: string) => [1, 3, 5].map((k) => Number.parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
+
+describe("nudgePalette", () => {
+  const blue: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"] };
+  const orange: Palette = { tint: "#c07a3a", foil: ["#f0d6bc", "#c88a50"] };
+  it("warms a cool colour: more red, less blue, in the tint and both foil stops", () => {
+    const w = nudgePalette(blue, 1);
+    for (const [before, after] of [[blue.tint, w.tint], [blue.foil[0], w.foil[0]], [blue.foil[1], w.foil[1]]] as const) {
+      expect(rgb(after)[0]).toBeGreaterThan(rgb(before)[0]);
+      expect(rgb(after)[2]).toBeLessThan(rgb(before)[2]);
+    }
+  });
+  it("cools a warm colour: more blue, less red", () => {
+    const c = nudgePalette(orange, -1);
+    expect(rgb(c.tint)[2]).toBeGreaterThan(rgb(orange.tint)[2]);
+    expect(rgb(c.tint)[0]).toBeLessThan(rgb(orange.tint)[0]);
+  });
+  it("keeps the photo's colour recognisable: lightness within a few points", () => {
+    const w = nudgePalette(blue, 1);
+    expect(Math.abs(hexToHsl(w.tint)[2] - hexToHsl(blue.tint)[2])).toBeLessThan(0.05);
+  });
+  it("leaves a grey palette alone: a photo with no colour gets none from a nudge", () => {
+    expect(nudgePalette(NEUTRAL_PALETTE, 1)).toBe(NEUTRAL_PALETTE);
+    expect(nudgePalette(NEUTRAL_PALETTE, -1)).toBe(NEUTRAL_PALETTE);
+  });
+});
+
+describe("withWash", () => {
+  it("adds a light wash in the tint's hue with a capped saturation", () => {
+    const p = withWash(photoPalette);
+    const [h, s, l] = hexToHsl(p.wash!);
+    // A wash this light has only a dozen 8-bit levels of colour, so hue and saturation round coarsely.
+    expect(Math.abs(h - hexToHsl(photoPalette.tint)[0]) * 360).toBeLessThan(5);
+    expect(s).toBeLessThanOrEqual(VARIATION_RULES.wash.saturationMax + 0.03);
+    expect(Math.abs(l - VARIATION_RULES.wash.lightness)).toBeLessThan(0.01);
+    expect(p.tint).toBe(photoPalette.tint);
+    expect(p.foil).toEqual(photoPalette.foil);
+  });
+  it("gives the neutral palette a grey wash", () => {
+    const [, s] = hexToHsl(withWash(NEUTRAL_PALETTE).wash!);
+    expect(s).toBe(0);
+  });
+});
+
 describe("paletteFor", () => {
-  it("returns a preset's colours", () => {
-    expect(paletteFor("warm", photoPalette)).toEqual({ tint: TONES.warm.tint, foil: TONES.warm.foil });
+  it("gives every tone a wash", () => {
+    for (const tone of Object.keys(TONES) as Tone[]) {
+      expect(paletteFor(tone, photoPalette).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
+      expect(paletteFor(tone, null).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
+    }
   });
-  it("returns the sampled palette for the photo tone", () => {
-    expect(paletteFor("photo", photoPalette)).toEqual(photoPalette);
+  it("returns the sampled palette with its wash for the photo tone", () => {
+    expect(paletteFor("photo", photoPalette)).toEqual(withWash(photoPalette));
   });
-  it("falls back to neutral when the photo tone has no sample", () => {
-    expect(paletteFor("photo", null)).toEqual(NEUTRAL_PALETTE);
+  it("nudges the sampled palette for warm and cool", () => {
+    expect(paletteFor("warm", photoPalette)).toEqual(withCaptionContrast(withWash(nudgePalette(photoPalette, 1))));
+    expect(paletteFor("cool", photoPalette)).toEqual(withCaptionContrast(withWash(nudgePalette(photoPalette, -1))));
+    expect(paletteFor("warm", photoPalette).tint).not.toBe(photoPalette.tint);
+  });
+  it("is the neutral grey for neutral, and for any tone without a sample", () => {
+    expect(paletteFor("neutral", photoPalette).tint).toBe(NEUTRAL_PALETTE.tint);
+    for (const tone of Object.keys(TONES) as Tone[]) expect(paletteFor(tone, null).tint, tone).toBe(NEUTRAL_PALETTE.tint);
   });
   it("lightens a sampled palette's foil until the caption keeps its contrast floor", () => {
     const dark: Palette = { tint: "#223355", foil: ["#8899bb", "#223355"] };
     const p = paletteFor("photo", dark);
     expect(p.tint).toBe(dark.tint);
     expect(p.foil[1]).not.toBe(dark.foil[1]);
-    for (const stop of p.foil) {
-      expect(contrastRatio(stop, CAPTION_INK)).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
-      expect(contrastRatio(stop, COORDS_INK)).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+    for (const c of [...p.foil, p.wash!]) {
+      expect(contrastRatio(c, CAPTION_INK)).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
+      expect(contrastRatio(c, COORDS_INK)).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
     }
-    expect(NEUTRAL_PALETTE).toEqual({ tint: TONES.neutral.tint, foil: TONES.neutral.foil });
+  });
+  it("keeps the neutral grey as written", () => {
+    expect(NEUTRAL_PALETTE).toEqual({ tint: "#8a8a8a", foil: ["#ececec", "#9c9c9c"] });
   });
 });
 
@@ -214,7 +271,7 @@ describe("deriveVariation", () => {
     expect(deriveVariation(inputs)).toEqual({
       texture: "foil",
       tone: "warm",
-      palette: { tint: TONES.warm.tint, foil: TONES.warm.foil },
+      palette: paletteFor("warm", null),
       tier: "animated",
       motion: "sheen",
       intro: assignIntro(0x1234abcd).id,
@@ -222,8 +279,9 @@ describe("deriveVariation", () => {
     });
     expect(deriveVariation({ ...inputs, number: null }).motion).toBe("none");
   });
-  it("ignores the photo palette while the rule assigns a preset tone", () => {
-    expect(deriveVariation({ ...inputs, photoPalette }).palette).toEqual({ tint: TONES.warm.tint, foil: TONES.warm.foil });
+  it("nudges the photo's own palette rather than replacing it", () => {
+    expect(deriveVariation({ ...inputs, photoPalette }).palette).toEqual(paletteFor("warm", photoPalette));
+    expect(deriveVariation({ ...inputs, photoPalette }).palette.tint).not.toBe(paletteFor("photo", photoPalette).tint);
   });
   it("coerces the seed to unsigned 32-bit", () => {
     expect(deriveVariation({ ...inputs, seed: -1 }).seed).toBe(0xffffffff);
@@ -251,10 +309,16 @@ describe("withOverrides", () => {
   it("returns an equal variation for no overrides", () => {
     expect(withOverrides(base, {}, photoPalette)).toEqual(base);
   });
-  it("resolves the photo tone from the sampled palette, or neutral without one", () => {
-    expect(withOverrides(base, { tone: "photo" }, photoPalette).palette).toEqual(photoPalette);
-    expect(withOverrides(base, { tone: "photo" }, null).palette).toEqual(NEUTRAL_PALETTE);
-    expect(withOverrides(base, { tone: "cool" }, photoPalette).palette).toEqual({ tint: TONES.cool.tint, foil: TONES.cool.foil });
+  it("re-resolves the palette from the sample only when the tone is overridden", () => {
+    expect(withOverrides(base, { tone: "photo" }, photoPalette).palette).toEqual(paletteFor("photo", photoPalette));
+    expect(withOverrides(base, { tone: "photo" }, null).palette).toEqual(paletteFor("photo", null));
+    expect(withOverrides(base, { tone: "cool" }, photoPalette).palette).toEqual(paletteFor("cool", photoPalette));
+  });
+  it("keeps a stored palette, wash or none, when the tone is not overridden", () => {
+    const stored: Palette = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] };
+    const saved = { ...base, tone: "warm" as const, palette: stored };
+    expect(withOverrides(saved, {}, null).palette).toBe(stored);
+    expect(withOverrides(saved, { texture: "worn" }, photoPalette).palette).toBe(stored);
   });
   it("lets motion follow an overridden tier unless motion is overridden too", () => {
     expect(withOverrides(base, { tier: "animated" }, null).motion).toBe("sheen");

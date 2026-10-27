@@ -14,11 +14,13 @@ export {
   deriveTier,
   deriveTone,
   deriveVariation,
+  nudgePalette,
   paletteFor,
   seasonStep,
   sunStep,
   variationSeed,
   withOverrides,
+  withWash,
 } from "./variation";
 export type {
   Motion,

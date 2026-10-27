@@ -1,3 +1,4 @@
+import { GREY_SATURATION, hexToHsl, hslToHex } from "./colour";
 import { withCaptionContrast } from "./contrast";
 import { type IntroId, assignIntro } from "./intros";
 import { captureInstant, sunElevation } from "./sun";
@@ -11,37 +12,79 @@ import type { Texture } from "./textures";
 
 /** Resolved colours the border draws with, as hex. */
 export interface Palette {
-  /** Grain tint over the white mat. */
+  /** Grain and pattern ink over the mat. */
   tint: string;
   /** Foil gradient stops, light then dark. */
   foil: readonly [string, string];
+  /** The flat colour under the whole mat. Absent on cards saved before Oct 26, 2026, which draw no wash. */
+  wash?: string;
 }
 
-/** A tone is a source of colours: a preset, or the photo itself (sampled by the app). */
+/**
+ * A tone is how the card's colours are made from the photo's: as sampled, nudged
+ * warmer or cooler, or the neutral grey a photo with no colour gets. No tone
+ * carries a colour of its own.
+ */
 export type ToneDef = { id: string; label: string } & (
-  | { source: "preset"; tint: string; foil: readonly [string, string] }
   | { source: "photo" }
+  | { source: "nudge"; direction: 1 | -1 }
+  | { source: "neutral" }
 );
 
 export const TONES = {
-  warm: { id: "warm", label: "Warm", source: "preset", tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] },
-  neutral: { id: "neutral", label: "Neutral", source: "preset", tint: "#8a8a8a", foil: ["#ececec", "#9c9c9c"] },
-  cool: { id: "cool", label: "Cool", source: "preset", tint: "#6878a0", foil: ["#d9e2f6", "#7086ba"] },
+  warm: { id: "warm", label: "Warm", source: "nudge", direction: 1 },
   photo: { id: "photo", label: "Photo", source: "photo" },
+  cool: { id: "cool", label: "Cool", source: "nudge", direction: -1 },
+  neutral: { id: "neutral", label: "Neutral", source: "neutral" },
 } as const satisfies Record<string, ToneDef>;
 export type Tone = keyof typeof TONES;
 
-export const NEUTRAL_PALETTE: Palette = { tint: TONES.neutral.tint, foil: TONES.neutral.foil };
+/** The grey for a photo with no colour, or none sampled: one of the three fixed colours the card may draw. */
+export const NEUTRAL_PALETTE: Palette = { tint: "#8a8a8a", foil: ["#ececec", "#9c9c9c"] };
+
+/** `hex` mixed by `amount` toward the colour of `hue` (degrees) at hex's own saturation and lightness. */
+function mixTowardHue(hex: string, hue: number, amount: number): string {
+  const [, s, l] = hexToHsl(hex);
+  const target = hslToHex(hue / 360, s, l);
+  const a = Number.parseInt(hex.slice(1), 16);
+  const b = Number.parseInt(target.slice(1), 16);
+  const ch = (shift: number) => {
+    const x = (a >> shift) & 255;
+    const y = (b >> shift) & 255;
+    return Math.round(x + (y - x) * amount).toString(16).padStart(2, "0");
+  };
+  return `#${ch(16)}${ch(8)}${ch(0)}`;
+}
 
 /**
- * The colours a tone resolves to, each clearing the caption contrast floor. The
- * photo tone needs the sampled palette; without one it is neutral. Presets clear
- * the floor as written; a sampled palette is lightened until it does.
+ * The palette nudged warmer (1) or cooler (-1): each colour mixed part of the way
+ * toward the warm or cool hue at its own saturation and lightness, like a warming
+ * filter. A grey palette is returned as it is: no colour comes from a nudge.
+ */
+export function nudgePalette(p: Palette, direction: 1 | -1): Palette {
+  if (hexToHsl(p.tint)[1] < GREY_SATURATION) return p;
+  const { nudge } = VARIATION_RULES;
+  const hue = direction === 1 ? nudge.warmHue : nudge.coolHue;
+  const move = (hex: string) => mixTowardHue(hex, hue, nudge.amount);
+  return { tint: move(p.tint), foil: [move(p.foil[0]), move(p.foil[1])] };
+}
+
+/** The palette with its wash: the tint's hue, light, at a capped saturation. */
+export function withWash(p: Palette): Palette {
+  const [h, s] = hexToHsl(p.tint);
+  const { wash } = VARIATION_RULES;
+  return { tint: p.tint, foil: p.foil, wash: hslToHex(h, Math.min(s, wash.saturationMax), wash.lightness) };
+}
+
+/**
+ * The colours a tone resolves to, from the photo's own sampled palette (neutral
+ * without one), with a wash, every colour clearing the caption contrast floor.
  */
 export function paletteFor(tone: Tone, photoPalette: Palette | null): Palette {
-  const def = TONES[tone];
-  const raw = def.source === "preset" ? { tint: def.tint, foil: def.foil } : (photoPalette ?? NEUTRAL_PALETTE);
-  return withCaptionContrast(raw);
+  const def: ToneDef = TONES[tone];
+  const base = photoPalette ?? NEUTRAL_PALETTE;
+  const raw = def.source === "neutral" ? NEUTRAL_PALETTE : def.source === "nudge" ? nudgePalette(base, def.direction) : base;
+  return withCaptionContrast(withWash(raw));
 }
 
 export interface MotionDef {
@@ -132,6 +175,10 @@ export const VARIATION_RULES = {
     fallback: "paper",
     foil: "foil",
   },
+  /** Warm and cool are mixes toward these hues (degrees) by `amount` (0 to 1). */
+  nudge: { warmHue: 35, coolHue: 215, amount: 0.2 },
+  /** The wash under the whole mat: HSL lightness, and the most saturation it keeps from the tint. Sets how visible the colour is at phone size. */
+  wash: { lightness: 0.92, saturationMax: 0.35 },
 } as const satisfies {
   tone: {
     warmHours: readonly (readonly [number, number])[];
@@ -143,6 +190,8 @@ export const VARIATION_RULES = {
   };
   tier: readonly { upTo: number; tier: Tier }[];
   texture: { fujiMakePrefix: string; fuji: Texture; landmark: Texture; fine: Texture; fallback: Texture; foil: Texture };
+  nudge: { warmHue: number; coolHue: number; amount: number };
+  wash: { lightness: number; saturationMax: number };
 };
 
 /** The tones the rule steps along, cool to warm. Neutral is never assigned: a grey photo reaches it through its palette. */
@@ -244,7 +293,7 @@ function textureForTier(tier: Tier, current: Texture): Texture {
   return current === t.foil ? t.fallback : current;
 }
 
-/** Apply overrides and re-resolve what depends on them: the palette from the tone, the motion and the texture from an overridden tier. */
+/** Apply overrides and re-resolve what depends on them: the palette only from an overridden tone (a stored palette is kept otherwise), the motion and the texture from an overridden tier. */
 export function withOverrides(base: Variation, overrides: VariationOverrides, photoPalette: Palette | null): Variation {
   const tone = overrides.tone ?? base.tone;
   const tier = overrides.tier ?? base.tier;
@@ -254,7 +303,7 @@ export function withOverrides(base: Variation, overrides: VariationOverrides, ph
     ...base,
     texture,
     tone,
-    palette: paletteFor(tone, photoPalette),
+    palette: overrides.tone !== undefined ? paletteFor(tone, photoPalette) : base.palette,
     tier,
     motion,
     intro: overrides.intro ?? base.intro,

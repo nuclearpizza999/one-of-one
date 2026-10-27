@@ -6,8 +6,8 @@ import type { Palette } from "./variation";
  * of its colours under the caption, so the darkest colour a palette can paint
  * must keep the caption readable: WCAG body-text contrast for the place and
  * date lines in the caption ink, large-text contrast for the lighter
- * coordinates line. Preset palettes clear it as written; a palette sampled
- * from a photo is lightened until it does.
+ * coordinates line. The neutral grey clears it as written; a palette made from
+ * a photo's colours, nudged or not, is lightened until it does.
  */
 
 export const CAPTION_INK = CARD.ink;
@@ -60,12 +60,14 @@ export function lightenToCaptionFloor(hex: string): string {
 }
 
 /**
- * The palette with both foil stops clearing the floor: the same object when they
- * already do, lightened copies otherwise. The tint only ever colours noise at low
- * opacity over the mat, so it is left as sampled.
+ * The palette with both foil stops and the wash clearing the floor: the same
+ * object when they already do, lightened copies otherwise. A palette without a
+ * wash stays without one. The tint only ever colours noise and pattern ink at
+ * low opacity over the mat, so it is left as sampled.
  */
 export function withCaptionContrast(p: Palette): Palette {
   const foil = [lightenToCaptionFloor(p.foil[0]), lightenToCaptionFloor(p.foil[1])] as const;
-  if (foil[0] === p.foil[0] && foil[1] === p.foil[1]) return p;
-  return { tint: p.tint, foil };
+  const wash = p.wash === undefined ? undefined : lightenToCaptionFloor(p.wash);
+  if (foil[0] === p.foil[0] && foil[1] === p.foil[1] && wash === p.wash) return p;
+  return wash === undefined ? { tint: p.tint, foil } : { tint: p.tint, foil, wash };
 }

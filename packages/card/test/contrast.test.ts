@@ -8,7 +8,8 @@ import {
   relativeLuminance,
   withCaptionContrast,
 } from "../src/contrast";
-import { TONES } from "../src/variation";
+import { hslToHex } from "../src/colour";
+import { NEUTRAL_PALETTE, TONES, type Tone, paletteFor } from "../src/variation";
 
 const channels = (hex: string) => [1, 3, 5].map((k) => Number.parseInt(hex.slice(k, k + 2), 16));
 
@@ -31,18 +32,20 @@ describe("contrastRatio", () => {
 });
 
 describe("withCaptionContrast", () => {
-  it("returns the same palette when both foil stops already clear the floor", () => {
-    const warm = { tint: TONES.warm.tint, foil: TONES.warm.foil };
-    expect(withCaptionContrast(warm)).toBe(warm);
+  it("returns the same palette when both foil stops and the wash already clear the floor", () => {
+    const light = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] as const, wash: "#f1ebe4" };
+    expect(withCaptionContrast(light)).toBe(light);
+    const noWash = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] as const };
+    expect(withCaptionContrast(noWash)).toBe(noWash);
   });
-  it("leaves every preset tone as written", () => {
-    for (const t of Object.values(TONES)) {
-      if (t.source !== "preset") continue;
-      const p = { tint: t.tint, foil: t.foil };
-      expect(withCaptionContrast(p), t.id).toBe(p);
-      expect(contrastRatio(t.foil[1], CAPTION_INK), t.id).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
-      expect(contrastRatio(t.foil[1], COORDS_INK), t.id).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
-    }
+  it("leaves the neutral grey as written", () => {
+    expect(withCaptionContrast(NEUTRAL_PALETTE)).toBe(NEUTRAL_PALETTE);
+  });
+  it("lightens a dark wash and keeps a palette without one without one", () => {
+    const p = withCaptionContrast({ tint: "#223355", foil: ["#c8d4ee", "#8899bb"], wash: "#223355" });
+    expect(contrastRatio(p.wash!, CAPTION_INK)).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
+    expect(contrastRatio(p.wash!, COORDS_INK)).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+    expect("wash" in withCaptionContrast({ tint: "#223355", foil: ["#8899bb", "#223355"] })).toBe(false);
   });
   it("lightens a dark stop just enough to clear both floors and keeps its hue and the tint", () => {
     const dark = { tint: "#223355", foil: ["#8899bb", "#223355"] as const };
@@ -63,6 +66,27 @@ describe("withCaptionContrast", () => {
     for (const stop of p.foil) {
       expect(contrastRatio(stop, CAPTION_INK)).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
       expect(contrastRatio(stop, COORDS_INK)).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+    }
+  });
+});
+
+describe("the caption floor over every tone", () => {
+  it("holds for the wash and both foil stops across a sweep of sampled colours", () => {
+    for (let hue = 0; hue < 360; hue += 15) {
+      for (const s of [0.15, 0.3, 0.45]) {
+        for (const l of [0.3, 0.5, 0.7]) {
+          const h = hue / 360;
+          const sample = { tint: hslToHex(h, s, l), foil: [hslToHex(h, s, 0.84), hslToHex(h, s, l * 0.9)] as const };
+          for (const tone of Object.keys(TONES) as Tone[]) {
+            const p = paletteFor(tone, sample);
+            for (const c of [p.wash!, ...p.foil]) {
+              const label = `${tone} ${hue}/${s}/${l} ${c}`;
+              expect(contrastRatio(c, CAPTION_INK), label).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
+              expect(contrastRatio(c, COORDS_INK), label).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+            }
+          }
+        }
+      }
     }
   });
 });
