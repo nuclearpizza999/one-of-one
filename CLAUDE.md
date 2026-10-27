@@ -14,8 +14,8 @@ npm workspaces on Node 24. Install once with `npm install` and `npx playwright i
 
 ```
 npm run dev                              Next dev server at http://localhost:3000 (apps/web), this Mac only, signed in automatically as the local founder
-npm run dev:lan                          the same on the Wi-Fi for a phone: http://<this Mac's LAN IP>:3000, with the sign-in bypass off
                                          against the local stack it signs straight into the founder dev@one-of-one.local (no sign-in screen; `dev` typed as the email on /signin does the same); turn it off with DEV_AUTO_SIGNIN=0 npm run dev
+npm run dev:lan                          the same on the Wi-Fi for a phone: http://<this Mac's LAN IP>:3000, with the sign-in bypass off
 npm test                                 Vitest unit tests in every workspace
 npm test -w packages/card -- layout      one unit test file (substring filter on the file name)
 npm test -w packages/places -- resolve   one places test file
@@ -46,7 +46,7 @@ npx supabase db push                     apply new migrations to the hosted proj
 - The design panel under the card on Make (`components/DesignPanel.tsx`: switch intro, texture, tone, tier, motion, border on print) ships to production but renders only for founders (`users.is_founder`, read by `useIsFounder` in `lib/founder.ts`); development builds show it to everyone, but only a founder's picks are saved with the card. Founders also get it on a saved card (`app/card/[id]/CardScreen.tsx`, writing through `lib/designs.ts`). The database enforces both: `cards_design_guard` refuses a change to a saved card's `variation` or `intro` by anyone but a founder, and `users_founder_guard` refuses any client change to `is_founder`; the flag is set only with SQL.
 - Development-only surfaces, absent from production builds: `/dev/variation` (every photo in the git-ignored `dev-photos/` folder, or a picked one, under every texture), `/api/dev/photos`, `/dev/card` for the equivalence test, and the local sign-in bypass (`lib/supabase/dev-bypass.ts`: `proxy.ts` signs a request with no session into the dev account, `POST /api/dev/signin` serves the `dev` codeword on /signin; on only against a 127.0.0.1/localhost stack with `DEV_SIGNIN_PASSWORD` in `.env.local`, off with `DEV_AUTO_SIGNIN=0`, which Playwright sets). `npm run check:prod` proves they do not ship.
 - Hosted since Oct 24, 2026: Supabase project `qdxiuvimqnqofqkhaize` (us-west-1, free plan) and Vercel at https://one-of-one-eight.vercel.app, which rebuilds on every push to main, so main is live. Migrations on the hosted database must never wipe or rewrite saved data, and it is never reset.
-- Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata), 2 (variation) and 4 (accounts and the board) are done. Next is step 5 (Add to board sheet and numbering). Decisions and plans so far are under `docs/superpowers/`.
+- Build order from SPEC.md: steps 1 (renderer and shell), 3 (metadata), 2 (variation) and 4 (accounts and the board) are done. Next is refining the border variation (decided Oct 26, 2026, design in progress): every card takes its colour from the photo, and a small on-device model reads what is in the photo, with the facts already read, to add motifs drawn into the mat. Then step 5 (Add to board sheet and numbering). Decisions and plans so far are under `docs/superpowers/`.
 
 ## Reference material
 
@@ -71,7 +71,7 @@ npx supabase db push                     apply new migrations to the hosted proj
 
 ## Rules that never bend
 
-- The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them.
+- The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them; the one exception is the founders, who may restyle their own cards through the design panel (Oct 24, 2026).
 - Card dimensions are percentages of card width (see the table in SPEC.md). One shared layout function feeds the screen painter and the print painter. Pixel-equivalent means a screenshot diff of the two passes within a small tolerance for text anti-aliasing; a one-unit layout drift fails it.
 - The photo is never cropped. The Board and Storyboard rows show it whole at a shared row height; the card shows it whole everywhere else.
 - The card number is assigned server-side in one transaction when a card goes public: one per card, next in sequence for that place, never reissued, never computed on the client.
