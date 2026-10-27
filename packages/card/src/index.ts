@@ -33,6 +33,8 @@ export type {
   VariationOverrides,
 } from "./variation";
 export { GREY_SATURATION, paletteFromPixels } from "./palette";
+export { hexToHsl, hslToHex, rgbToHsl } from "./colour";
+export { captureInstant, sunElevation } from "./sun";
 export { TEXTURES, foilFill, grainFilter, mottleFilter, wearStrokes } from "./textures";
 export type { BorderDraw, Texture, TextureDef, TextureFragments } from "./textures";
 export { borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "./border";
