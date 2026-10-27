@@ -185,8 +185,8 @@ test("the design panel switches the live card's variation and returns to the ass
   await expect(card).toHaveAttribute("data-texture", "worn");
 
   const tone = page.locator(".design-field", { hasText: "Tone" });
-  await tone.getByRole("button", { name: "Photo" }).click();
-  await expect(card).toHaveAttribute("data-tone", "photo");
+  await tone.getByRole("button", { name: "Cool" }).click();
+  await expect(card).toHaveAttribute("data-tone", "cool");
 
   const tier = page.locator(".design-field", { hasText: "Tier" });
   await tier.getByRole("button", { name: "Animated" }).click();

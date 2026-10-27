@@ -12,6 +12,7 @@ const photo = {
     dateSource: "exif" as const,
     gps: { lat: 37.5563, lng: 126.9236 },
     camera: { make: "Apple", model: "iPhone 15 Pro" },
+    utcOffsetMinutes: null,
   },
   variation: {
     texture: "paper" as const,
@@ -66,7 +67,7 @@ describe("cardRow", () => {
     });
   });
   it("never carries a number or a public flag, and copes with no date, GPS, camera or place", () => {
-    const bare = { ...photo, meta: { takenAt: null, dateSource: "none" as const, gps: null, camera: null } };
+    const bare = { ...photo, meta: { takenAt: null, dateSource: "none" as const, gps: null, camera: null, utcOffsetMinutes: null } };
     const row = cardRow({ photo: bare, caption: { place: "", date: "", coords: "" }, userId, placeId: null, paths });
     expect(row.taken_at).toBeNull();
     expect(row.exif_lat).toBeNull();

@@ -1,6 +1,6 @@
 "use client";
 
-import { CARD, Card, type Texture, type Tier, type Variation, borderSvg, cardHeightUnits, paletteFor, renderPng } from "@one-of-one/card";
+import { CARD, Card, type Palette, type Texture, type Tier, type Variation, borderSvg, cardHeightUnits, paletteFor, renderPng } from "@one-of-one/card";
 import { useEffect, useMemo, useState } from "react";
 
 export type Fixture = "portrait" | "landscape" | "square";
@@ -32,13 +32,16 @@ interface Loaded {
   element: HTMLImageElement;
 }
 
+// A fixed sample (a test fixture, not a design colour) so only the texture varies between equivalence cases.
+const DEV_PALETTE: Palette = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] };
+
 export function DevCard({ fixture, coords, number, longPlace, drift, texture, tier, driftBorder }: DevCardProps) {
   const src = `/dev/${fixture}.png`;
-  // A fixed variation for the diff: warm preset colours, no motion, one seed, so only the texture varies between cases.
+  // A fixed variation for the diff: one sampled palette with its wash, no motion, one seed, so only the texture varies between cases.
   const variation = useMemo<Variation | null>(
     () =>
       texture
-        ? { texture, tone: "warm", palette: paletteFor("warm", null), tier, motion: "none", intro: "rise", seed: 12345 }
+        ? { texture, tone: "photo", palette: paletteFor("photo", DEV_PALETTE), tier, motion: "none", intro: "rise", seed: 12345 }
         : null,
     [texture, tier],
   );

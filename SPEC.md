@@ -40,8 +40,9 @@ Rules:
 Layout and type are fixed on every card; only the border varies, the way a trading-card set varies its frame and foil while the text stays put. The border is the whole mat: the white around the photo and the caption strip beneath it. Every texture covers all of it, and the photo is the one area nothing touches. The aim is that no two cards look alike, so the name is literal.
 
 - What varies: border texture (paper grain, edge wear, foil gradient), a finish tier, and a small border motion on screen. The photo, caption font, sizes and positions never change, and the caption keeps a contrast floor: the darkest colour a texture can put under it stays at least 4.5:1 against the caption ink (#111) and 3:1 against the coordinates ink (#333). The preset palettes clear the floor as written; a palette sampled from a photo is lightened until it does. A test enforces it.
+- Colour (decided Oct 26, 2026). Every card takes the photo's own colour, sampled from the pixels that touch the mat, as a light wash over the whole mat under the texture, strong enough to see at phone size and under the caption contrast floor. Warm and Cool are nudges of that colour, never colours of their own. The only fixed colours a design draws are the white mat, white light in the sheen, and the neutral grey a photo with no colour gets.
 - Assigned, never chosen. Variation is derived from facts the app already has, so there is no customization UI and nothing to game by picking:
-  - time of day and season from the EXIF capture time (a golden-hour photo gets a warm texture)
+  - the sun's height at the photo's place and moment, from EXIF GPS, capture time and time zone, and the season in the photo's own hemisphere (a golden-hour photo gets a warmer colour; without GPS, the hour alone and no season)
   - camera or lens from EXIF (a Fuji body gets its own look)
   - number tier (low numbers earn foil or animated edges)
   - place type (restaurant, landmark, nature)

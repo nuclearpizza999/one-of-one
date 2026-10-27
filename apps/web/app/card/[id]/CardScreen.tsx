@@ -1,8 +1,8 @@
 "use client";
 
-import { Card, type Variation, type VariationOverrides, withOverrides } from "@one-of-one/card";
+import { Card, type Palette, type Variation, type VariationOverrides, withOverrides } from "@one-of-one/card";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
 import { DesignPanel } from "@/components/DesignPanel";
 import { Icon } from "@/components/Icon";
@@ -11,7 +11,7 @@ import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
 import { useWall } from "@/components/useWall";
 import { updateCardDesign } from "@/lib/designs";
-import { loadImage } from "@/lib/photo";
+import { loadImage, samplePhotoPalette } from "@/lib/photo";
 import { printCard } from "@/lib/print";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -40,9 +40,24 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
   const saving = useRef<Promise<void>>(Promise.resolve());
   const lastPick = useRef(0);
 
-  // The photo's own palette is not kept with the card, so "Photo" can only mean the stored palette when
-  // the card was saved with the Photo tone; otherwise it resolves to the neutral palette.
-  const photoPalette = stored.tone === "photo" ? stored.palette : null;
+  // The photo's palette is not stored with the card. For a founder, sample it from the photo shown, so the
+  // panel's Warm, Photo and Cool resolve against the real photo; until then, and for anyone else, a card saved
+  // with the Photo tone uses its stored palette and any other card none. Without an overridden tone the stored
+  // palette is kept whatever this is, so nobody's saved card changes.
+  const [sampled, setSampled] = useState<Palette | null>(null);
+  useEffect(() => {
+    if (!isFounder) return;
+    let cancelled = false;
+    loadImage(photo.src)
+      .then((img) => {
+        if (!cancelled) setSampled(samplePhotoPalette(img));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isFounder, photo.src]);
+  const photoPalette = sampled ?? (stored.tone === "photo" ? stored.palette : null);
   const variation = withOverrides(stored, overrides, photoPalette);
 
   function onOverrides(next: VariationOverrides) {

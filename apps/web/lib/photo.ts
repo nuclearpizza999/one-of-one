@@ -122,7 +122,6 @@ export async function describePhoto(
     height: img.naturalHeight,
     takenAtMs: exifTime ? wallClockMs(exifTime) : null,
     camera: meta.camera,
-    cardId: cardId ?? undefined,
   });
   const variation = deriveVariation({
     seed,
@@ -131,6 +130,9 @@ export async function describePhoto(
     number: null,
     placeKind: match?.kind ?? null,
     photoPalette: palette,
+    gps: meta.gps,
+    // An offset belongs to the EXIF capture time; a file's modification time has none.
+    utcOffsetMinutes: exifTime ? meta.utcOffsetMinutes : null,
   });
 
   return { file, id: cardId, src, width: img.naturalWidth, height: img.naturalHeight, element: img, meta, match, lookupFailed, caption, palette, variation };
