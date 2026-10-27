@@ -26,7 +26,7 @@ import {
 import { captureInstant, sunElevation } from "../src/sun";
 
 const at = (month: number, hour: number) => new Date(2026, month, 15, hour, 0, 0);
-// Clears the caption contrast floor as written, so paletteFor returns it unchanged.
+// Clears the caption contrast floor as written, so paletteFor only adds its wash.
 const photoPalette: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"] };
 
 describe("registries", () => {
@@ -54,6 +54,7 @@ describe("registries", () => {
 const SEOUL = { lat: 37.5563, lng: 126.9236 };
 const SYDNEY = { lat: -33.8688, lng: 151.2093 };
 const SINGAPORE = { lat: 1.3521, lng: 103.8198 };
+const LONDON = { lat: 51.5074, lng: -0.1278 };
 const noGps = (d: Date | null) => deriveTone({ takenAt: d, gps: null, utcOffsetMinutes: null });
 const atPlace = (d: Date, gps: { lat: number; lng: number }, offset: number | null) => deriveTone({ takenAt: d, gps, utcOffsetMinutes: offset });
 /** The first minute of a day, at a place and offset, whose sun elevation is inside [lo, hi]. */
@@ -115,6 +116,13 @@ describe("deriveTone", () => {
     expect(atPlace(new Date(2026, 2, 15, 0, 30), SEOUL, 540)).toBe("cool");
     expect(atPlace(minuteWithSun(2026, 2, 15, 540, SEOUL, 0, 3, 15), SEOUL, 540)).toBe("warm");
     expect(atPlace(minuteWithSun(2026, 2, 15, 540, SEOUL, -6, -4.5, 15), SEOUL, 540)).toBe("cool");
+  });
+  it("takes the sun path for a UTC offset of zero, which is a zone and not a missing one", () => {
+    // 19:00 in London in mid-March: the hour ranges say warm, but the sun is well below the cool line.
+    const evening = new Date(2026, 2, 15, 19, 0);
+    expect(sunElevation(captureInstant(evening, 0), LONDON.lat, LONDON.lng)).toBeLessThan(-4);
+    expect(atPlace(evening, LONDON, null)).toBe("warm");
+    expect(atPlace(evening, LONDON, 0)).toBe("cool");
   });
   it("adds the season by hemisphere and clamps", () => {
     expect(atPlace(new Date(2026, 5, 21, 12, 34), SEOUL, 540)).toBe("warm");

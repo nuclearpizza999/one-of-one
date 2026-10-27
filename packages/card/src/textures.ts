@@ -129,9 +129,10 @@ export function lighten(hex: string, t: number): string {
 }
 
 /**
- * Opacity ceilings for flower ink: filled shapes and thin strokes. The tint
- * already clears the caption floor at full strength, and ink of one colour
- * never composites darker than that colour; these keep the pattern quiet.
+ * Opacity ceilings for flower ink: filled shapes and thin strokes. Ink of one
+ * colour never composites darker than that colour, and these ceilings keep it
+ * pale over the wash; the flower textures are founders-only, and the caption
+ * floor test does not yet cover their darkest composite.
  */
 export const FLOWER_FILL_MAX = 0.35;
 export const FLOWER_STROKE_MAX = 0.5;

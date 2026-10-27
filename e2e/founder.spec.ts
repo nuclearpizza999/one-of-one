@@ -74,6 +74,26 @@ test("a founder restyles a saved card from its page, and each pick is saved", as
   await expect(card).toHaveAttribute("data-texture", "grain");
 });
 
+test("a founder's tone pick on a saved card is saved with the colour of the photo, not the neutral grey", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+
+  // Pick at once: the save waits for the photo's colour to be sampled, so it never records the grey.
+  const card = page.locator("figure.oo-card");
+  const panel = page.locator("[data-design-panel]");
+  await panel.locator(".design-field", { hasText: "Tone" }).getByRole("button", { name: "Cool", exact: true }).click();
+  await expect(card).toHaveAttribute("data-tone", "cool");
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(card).toHaveAttribute("data-tone", "cool");
+  const assigned = panel.locator("[data-design-assigned]");
+  await expect(assigned).toContainText("tint #");
+  await expect(assigned).not.toContainText("tint #8a8a8a");
+});
+
 test("anyone else's saved card has no design panel", async ({ page }) => {
   await signIn(page, freshEmail());
   await saveWithFoil(page);

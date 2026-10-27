@@ -43,32 +43,38 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
   // The photo's palette is not stored with the card. For a founder, sample it from the photo shown, so the
   // panel's Warm, Photo and Cool resolve against the real photo; until then, and for anyone else, a card saved
   // with the Photo tone uses its stored palette and any other card none. Without an overridden tone the stored
-  // palette is kept whatever this is, so nobody's saved card changes.
+  // palette is kept whatever this is, so nobody's saved card changes. The sample is also kept as a promise, so
+  // a pick made before it settles is saved with the palette the screen ends up showing, not the grey.
   const [sampled, setSampled] = useState<Palette | null>(null);
+  const sample = useRef<Promise<Palette | null>>(Promise.resolve(null));
   useEffect(() => {
     if (!isFounder) return;
     let cancelled = false;
-    loadImage(photo.src)
-      .then((img) => {
-        if (!cancelled) setSampled(samplePhotoPalette(img));
-      })
-      .catch(() => {});
+    const promise = loadImage(photo.src)
+      .then((img) => samplePhotoPalette(img))
+      .catch(() => null);
+    sample.current = promise;
+    void promise.then((palette) => {
+      if (!cancelled) setSampled(palette);
+    });
     return () => {
       cancelled = true;
     };
   }, [isFounder, photo.src]);
-  const photoPalette = sampled ?? (stored.tone === "photo" ? stored.palette : null);
-  const variation = withOverrides(stored, overrides, photoPalette);
+  // The one rule for the palette a tone pick resolves against, shared by the render and the save.
+  const photoPaletteFor = (current: Palette | null) => current ?? (stored.tone === "photo" ? stored.palette : null);
+  const variation = withOverrides(stored, overrides, photoPaletteFor(sampled));
 
   function onOverrides(next: VariationOverrides) {
     setOverrides(next);
     if (next.intro !== overrides.intro) setReplayKey((k) => k + 1);
-    const design = withOverrides(stored, next, photoPalette);
     const pick = ++lastPick.current;
     setStatus("Saving…");
     saving.current = saving.current.then(async () => {
       let line = "Saved.";
       try {
+        // Wait for the sample, so the palette saved is the one the screen shows once it has settled.
+        const design = withOverrides(stored, next, photoPaletteFor(await sample.current));
         await updateCardDesign(createBrowserSupabase(), cardId, design);
       } catch {
         line = "Couldn't save the design. Try again.";
