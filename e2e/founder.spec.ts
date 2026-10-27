@@ -1,7 +1,7 @@
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { freshEmail, signIn } from "./auth";
-import { makeFounder } from "./founder";
+import { makeFounder, setStoredMotion } from "./founder";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -92,6 +92,23 @@ test("a founder's tone pick on a saved card is saved with the colour of the phot
   const assigned = panel.locator("[data-design-assigned]");
   await expect(assigned).toContainText("tint #");
   await expect(assigned).not.toContainText("tint #8a8a8a");
+});
+
+test("a saved card that picked a retired motion opens with no motion", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+  const cardId = new URL(page.url()).pathname.split("/").pop()!;
+
+  // Glow was a founders' pick until it was retired; a card saved with it must still open.
+  setStoredMotion(cardId, "glow");
+  await page.reload();
+  const card = page.locator("figure.oo-card");
+  await expect(card).toHaveAttribute("data-texture", "foil");
+  await expect(card).toHaveAttribute("data-motion", "none");
+  await expect(page.locator(".oo-frame")).not.toHaveClass(/\boo-motion-/);
 });
 
 test("anyone else's saved card has no design panel", async ({ page }) => {

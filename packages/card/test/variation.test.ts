@@ -15,6 +15,7 @@ import {
   deriveTier,
   deriveTone,
   deriveVariation,
+  knownMotion,
   nudgePalette,
   paletteFor,
   seasonStep,
@@ -300,12 +301,12 @@ describe("deriveVariation", () => {
     for (let s = 0; s < 30; s += 1) seen.add(deriveVariation({ ...inputs, seed: s }).intro);
     expect(seen).toEqual(ids);
   });
-  it("never assigns the founders-only motions", () => {
-    const assigned = new Set<string>(Object.values(TIERS).map((t) => t.motion));
-    for (const m of ["glow", "twinkle", "petals"] as const) {
-      expect(MOTIONS[m]).toBeDefined();
-      expect(assigned.has(m)).toBe(false);
+  it("has retired Glow, Twinkle and Petals, and reads a retired or unknown stored motion as none", () => {
+    for (const m of ["glow", "twinkle", "petals", "bogus", ""]) {
+      expect(Object.hasOwn(MOTIONS, m)).toBe(false);
+      expect(knownMotion(m)).toBe("none");
     }
+    for (const m of Object.keys(MOTIONS)) expect(knownMotion(m)).toBe(m);
   });
 });
 

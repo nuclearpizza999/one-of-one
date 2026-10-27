@@ -1,4 +1,4 @@
-import type { Variation } from "@one-of-one/card";
+import { knownMotion, type Variation } from "@one-of-one/card";
 import { notFound } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { CardScreen } from "./CardScreen";
@@ -16,7 +16,8 @@ interface CardReadRow {
   caption_place: string;
   caption_date: string;
   caption_coords: string;
-  variation: Pick<Variation, "texture" | "tone" | "palette" | "tier" | "motion">;
+  // The motion is a string: a card saved with a since-retired motion still holds its id.
+  variation: Pick<Variation, "texture" | "tone" | "palette" | "tier"> & { motion: string };
   intro: Variation["intro"];
   variation_seed: number | string;
 }
@@ -48,7 +49,7 @@ export default async function CardPage({ params }: { params: Promise<{ id: strin
       photo={{ src: rendition.data.signedUrl, width: row.photo_w, height: row.photo_h }}
       originalUrl={original.data.signedUrl}
       caption={{ place: row.caption_place, date: row.caption_date, coords: row.caption_coords }}
-      variation={{ ...row.variation, intro: row.intro, seed: Number(row.variation_seed) }}
+      variation={{ ...row.variation, motion: knownMotion(row.variation.motion), intro: row.intro, seed: Number(row.variation_seed) }}
     />
   );
 }

@@ -97,12 +97,17 @@ export interface MotionDef {
 export const MOTIONS = {
   none: { id: "none", label: "None", className: null },
   sheen: { id: "sheen", label: "Sheen", className: "oo-motion-sheen" },
-  // Founders only: no tier points at these, so assignment never reaches them.
-  glow: { id: "glow", label: "Glow", className: "oo-motion-glow" },
-  twinkle: { id: "twinkle", label: "Twinkle", className: "oo-motion-twinkle" },
-  petals: { id: "petals", label: "Petals", className: "oo-motion-petals" },
 } as const satisfies Record<string, MotionDef>;
 export type Motion = keyof typeof MOTIONS;
+
+/**
+ * A stored motion as one the registry still has. Founders' saved cards may hold a retired
+ * motion (Glow, Twinkle and Petals, retired Oct 27, 2026); those read as none. Saved rows
+ * are never rewritten, so every read of a stored variation goes through this.
+ */
+export function knownMotion(id: string): Motion {
+  return Object.hasOwn(MOTIONS, id) ? (id as Motion) : "none";
+}
 
 export interface TierDef {
   id: string;

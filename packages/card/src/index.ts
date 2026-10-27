@@ -14,6 +14,7 @@ export {
   deriveTier,
   deriveTone,
   deriveVariation,
+  knownMotion,
   nudgePalette,
   paletteFor,
   seasonStep,

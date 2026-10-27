@@ -92,15 +92,11 @@ describe("Card with a photo", () => {
     expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={sheen} intro="flip" />)).toContain('class="oo-frame oo-intro-flip oo-motion-sheen"');
   });
 
-  it("adds the founders' motion classes and new intro classes on the frame", () => {
-    for (const motion of ["glow", "twinkle", "petals"] as const) {
-      const v = { ...variation, motion };
-      expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={v} />)).toContain(`class="oo-frame oo-motion-${motion}"`);
-    }
-    const glow = { ...variation, motion: "glow" } as const;
+  it("adds the founders' intro classes on the frame", () => {
+    const sheen = { ...variation, motion: "sheen" } as const;
     for (const intro of ["fade", "slide", "drop"] as const) {
-      expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={glow} intro={intro} />)).toContain(
-        `class="oo-frame oo-intro-${intro} oo-motion-glow"`,
+      expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={sheen} intro={intro} />)).toContain(
+        `class="oo-frame oo-intro-${intro} oo-motion-sheen"`,
       );
     }
   });
