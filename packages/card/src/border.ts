@@ -19,8 +19,9 @@ const f = (n: number): string => Number(n.toFixed(3)).toString();
 /**
  * The border as one SVG document in card units (viewBox 0 0 100 H): the whole
  * mat, around the photo and under the caption, drawn in one clip group that
- * cuts the photo box out. The photo box is never painted. Both painters render
- * this same document, so screen and print match by construction.
+ * cuts the photo box out. The photo box is never painted. The mat is filled
+ * with the palette's wash first, when it has one. Both painters render this
+ * same document, so screen and print match by construction.
  */
 export function borderSvg(v: Variation, cardHeightUnits: number): string {
   const H = Number(cardHeightUnits.toFixed(3));
@@ -40,11 +41,13 @@ export function borderSvg(v: Variation, cardHeightUnits: number): string {
     photo,
   };
   const frag = TEXTURES[v.texture].draw(d);
+  // The wash is the photo's colour under everything else; a palette saved before it existed has none and draws none.
+  const wash = v.palette.wash ? `<rect x="0" y="0" width="100" height="${f(H)}" fill="${v.palette.wash}"/>` : "";
   const matClip = `<clipPath id="mat"><path clip-rule="evenodd" d="M0 0H100V${f(H)}H0Z M${f(photo.x)} ${f(photo.y)}h${f(photo.w)}v${f(photo.h)}h-${f(photo.w)}Z"/></clipPath>`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 ${f(H)}" width="100" height="${f(H)}">` +
     `<defs>${matClip}${frag.defs}</defs>` +
-    `<g clip-path="url(#mat)">${frag.mat}</g>` +
+    `<g clip-path="url(#mat)">${wash}${frag.mat}</g>` +
     `</svg>`
   );
 }

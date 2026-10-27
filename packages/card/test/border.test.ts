@@ -86,6 +86,21 @@ describe("borderSvg", () => {
       expect(svg).toContain("feTurbulence");
     }
   });
+  it("draws the wash first in the mat group, and only there", () => {
+    const plain = borderSvg(base, H);
+    const washed = borderSvg({ ...base, palette: { ...base.palette, wash: "#eef2f8" } }, H);
+    expect(washed).toBe(
+      plain.replace('<g clip-path="url(#mat)">', '<g clip-path="url(#mat)"><rect x="0" y="0" width="100" height="141" fill="#eef2f8"/>'),
+    );
+  });
+  it("draws no wash for a palette saved without one, so saved cards look as they did", () => {
+    // A wash is a flat full-card rect with a six-digit fill and nothing else; the noise layers' rects carry a filter.
+    const WASH = /<rect x="0" y="0" width="100" height="141" fill="#[0-9a-f]{6}"\/>/;
+    for (const id of Object.keys(TEXTURES) as (keyof typeof TEXTURES)[]) {
+      expect(borderSvg({ ...base, texture: id }, H), id).not.toMatch(WASH);
+    }
+    expect(borderSvg({ ...base, palette: { ...base.palette, wash: "#eef2f8" } }, H)).toMatch(WASH);
+  });
 });
 
 describe("borderDataUrl", () => {
