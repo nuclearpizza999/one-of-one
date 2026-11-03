@@ -55,7 +55,7 @@ The new motions move `transform` or `opacity` only, so the browser can run them 
 
 ## App wiring
 
-Nothing in `apps/web` changes. The design panel builds its Motion strip from `MOTIONS`, so it shows the ten choices plus Assigned. A founder's pick saves through the existing paths (`lib/save.ts` on Make, `lib/designs.ts` on a saved card). The opened card reads it through `knownMotion`. `/dev/card` keeps motion None, so the equivalence diff is untouched.
+The design panel builds its Motion strip from `MOTIONS`, so it shows the ten choices plus Assigned. Its strips wrap onto more rows (`design-panel.css`), since eleven cells do not fit one row on a phone; the Texture strip already ran off the screen. A founder's pick saves through the existing paths (`lib/save.ts` on Make, `lib/designs.ts` on a saved card). The opened card reads it through `knownMotion`. `/dev/card` keeps motion None, so the equivalence diff is untouched.
 
 ## Documentation
 
