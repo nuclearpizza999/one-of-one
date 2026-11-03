@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { INTROS, assignIntro } from "../src/intros";
-import { MOTIONS } from "../src/variation";
+import { MOTIONS } from "../src/motions";
 
 const css = readFileSync(fileURLToPath(new URL("../src/card.css", import.meta.url)), "utf8");
 const reducedMotion = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));

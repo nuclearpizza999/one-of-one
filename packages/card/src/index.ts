@@ -5,7 +5,6 @@ export { CARD_FONT_FAMILY, cardFont, loadCardFonts } from "./fonts";
 export { INTROS, assignIntro } from "./intros";
 export type { Intro, IntroId } from "./intros";
 export {
-  MOTIONS,
   NEUTRAL_PALETTE,
   TIERS,
   TONES,
@@ -14,7 +13,6 @@ export {
   deriveTier,
   deriveTone,
   deriveVariation,
-  knownMotion,
   nudgePalette,
   paletteFor,
   seasonStep,
@@ -24,8 +22,6 @@ export {
   withWash,
 } from "./variation";
 export type {
-  Motion,
-  MotionDef,
   Palette,
   PlaceKindLike,
   SeedFacts,
@@ -38,6 +34,8 @@ export type {
   VariationInputs,
   VariationOverrides,
 } from "./variation";
+export { MOTIONS, knownMotion } from "./motions";
+export type { Motion, MotionDef } from "./motions";
 export { GREY_SATURATION, paletteFromPixels } from "./palette";
 export { hexToHsl, hslToHex, rgbToHsl } from "./colour";
 export { captureInstant, sunElevation } from "./sun";

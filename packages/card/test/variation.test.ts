@@ -3,7 +3,6 @@ import { hexToHsl } from "../src/colour";
 import { CAPTION_INK, CAPTION_MIN_CONTRAST, COORDS_INK, COORDS_MIN_CONTRAST, contrastRatio, withCaptionContrast } from "../src/contrast";
 import { INTROS, assignIntro } from "../src/intros";
 import {
-  MOTIONS,
   NEUTRAL_PALETTE,
   TIERS,
   TONES,
@@ -15,7 +14,6 @@ import {
   deriveTier,
   deriveTone,
   deriveVariation,
-  knownMotion,
   nudgePalette,
   paletteFor,
   seasonStep,
@@ -24,6 +22,7 @@ import {
   withOverrides,
   withWash,
 } from "../src/variation";
+import { MOTIONS, knownMotion } from "../src/motions";
 import { captureInstant, sunElevation } from "../src/sun";
 
 const at = (month: number, hour: number) => new Date(2026, month, 15, hour, 0, 0);

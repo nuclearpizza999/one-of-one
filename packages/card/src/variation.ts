@@ -2,12 +2,14 @@ import { GREY_SATURATION, hexToHsl, hslToHex } from "./colour";
 import { withCaptionContrast } from "./contrast";
 import { type IntroId, assignIntro } from "./intros";
 import { captureInstant, sunElevation } from "./sun";
+import type { Motion } from "./motions";
 import type { Texture } from "./textures";
 
 /*
  * Everything that varies is a registry entry. Adding one is data (plus, for a
- * texture, its draw function; for a motion, its CSS class). The types below are
- * derived from the registry keys, so a new entry needs no type edit.
+ * texture, its draw function; for a motion, its CSS and the pieces its light
+ * layer holds, in motions.ts). The types below are derived from the registry
+ * keys, so a new entry needs no type edit.
  */
 
 /** Resolved colours the border draws with, as hex. */
@@ -85,28 +87,6 @@ export function paletteFor(tone: Tone, photoPalette: Palette | null): Palette {
   const base = photoPalette ?? NEUTRAL_PALETTE;
   const raw = def.source === "neutral" ? NEUTRAL_PALETTE : def.source === "nudge" ? nudgePalette(base, def.direction) : base;
   return withCaptionContrast(withWash(raw));
-}
-
-export interface MotionDef {
-  id: string;
-  label: string;
-  /** Class on .oo-frame that card.css animates; null for no motion. Screen only. */
-  className: string | null;
-}
-
-export const MOTIONS = {
-  none: { id: "none", label: "None", className: null },
-  sheen: { id: "sheen", label: "Sheen", className: "oo-motion-sheen" },
-} as const satisfies Record<string, MotionDef>;
-export type Motion = keyof typeof MOTIONS;
-
-/**
- * A stored motion as one the registry still has. Founders' saved cards may hold a retired
- * motion (Glow, Twinkle and Petals, retired Oct 27, 2026); those read as none. Saved rows
- * are never rewritten, so every read of a stored variation goes through this.
- */
-export function knownMotion(id: string): Motion {
-  return Object.hasOwn(MOTIONS, id) ? (id as Motion) : "none";
 }
 
 export interface TierDef {

@@ -6,7 +6,8 @@ import { CARD_FONT_FAMILY } from "./fonts";
 import { borderDataUrl } from "./border";
 import { CARD, cardHeightUnits } from "./layout";
 import type { LineKind } from "./layout";
-import { MOTIONS, type Variation } from "./variation";
+import { MOTIONS } from "./motions";
+import type { Variation } from "./variation";
 
 export interface CardPhoto {
   src: string;
