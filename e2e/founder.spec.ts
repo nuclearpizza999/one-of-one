@@ -1,7 +1,7 @@
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { freshEmail, signIn } from "./auth";
-import { makeFounder, setStoredMotion } from "./founder";
+import { clearStoredToneStrength, makeFounder, setStoredMotion } from "./founder";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -109,6 +109,41 @@ test("a saved card that picked a retired motion opens with no motion", async ({ 
   await expect(card).toHaveAttribute("data-texture", "foil");
   await expect(card).toHaveAttribute("data-motion", "none");
   await expect(page.locator(".oo-frame")).not.toHaveClass(/\boo-motion-/);
+});
+
+test("a founder's tone strength on a saved card survives a reload", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+
+  const card = page.locator("figure.oo-card");
+  const panel = page.locator("[data-design-panel]");
+  await panel.locator(".design-field", { hasText: "Tone" }).getByRole("button", { name: "Warm", exact: true }).click();
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await panel.getByRole("slider", { name: "Tone strength" }).fill("19");
+  await expect(card).toHaveAttribute("data-tone-strength", "19");
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(card).toHaveAttribute("data-tone", "warm");
+  await expect(card).toHaveAttribute("data-tone-strength", "19");
+});
+
+test("a card saved before tone strengths opens at the middle strength with its colours unchanged", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+  const cardId = new URL(page.url()).pathname.split("/").pop()!;
+  const border = page.locator("img.oo-border-img");
+  const before = (await border.getAttribute("src"))!;
+
+  clearStoredToneStrength(cardId);
+  await page.reload();
+  await expect(page.locator("figure.oo-card")).toHaveAttribute("data-tone-strength", "13");
+  await expect(border).toHaveAttribute("src", before);
 });
 
 test("a founder's Glint on a saved card survives a reload, with keyframes made for the card's shape", async ({ page }) => {

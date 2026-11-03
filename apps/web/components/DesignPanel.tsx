@@ -1,7 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
 import "./design-panel.css";
-import { INTROS, MOTIONS, TEXTURES, TIERS, TONES, type Variation, type VariationOverrides } from "@one-of-one/card";
+import { INTROS, MOTIONS, TEXTURES, TIERS, TONES, VARIATION_RULES, type Variation, type VariationOverrides } from "@one-of-one/card";
 import { Strip } from "@/components/Strip";
 
 export interface DesignPanelProps {
@@ -12,7 +13,7 @@ export interface DesignPanelProps {
   onBorderOnPrint: (on: boolean) => void;
 }
 
-type Field = keyof VariationOverrides;
+type Field = Exclude<keyof VariationOverrides, "toneStrength">;
 
 /** Built from the registries, never listed by hand: a new entry appears here on its own. */
 const FIELDS: ReadonlyArray<{ key: Field; title: string; entries: ReadonlyArray<{ id: string; label: string }> }> = [
@@ -34,25 +35,59 @@ export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBor
     else next[key] = id;
     onChange(next as VariationOverrides);
   };
+  const setStrength = (value: number | undefined) => {
+    const next: VariationOverrides = { ...overrides };
+    if (value === undefined) delete next.toneStrength;
+    else next.toneStrength = value;
+    onChange(next);
+  };
+  // The photo's colour and the grey have nothing to shift.
+  const tone = overrides.tone ?? derived.tone;
+  const strengthOff = tone === "photo" || tone === "neutral";
+  const strength = overrides.toneStrength ?? derived.toneStrength;
 
   return (
     <section className="design-panel" data-design-panel aria-label="Card design">
       {FIELDS.map((f) => (
-        <div className="design-field" key={f.key}>
-          <span className="label">{f.title}</span>
-          <Strip
-            size="option"
-            cells={[
-              ...f.entries.map((e) => ({
-                label: e.label,
-                text: e.label,
-                selected: overrides[f.key] === e.id,
-                onClick: () => set(f.key, e.id),
-              })),
-              { label: "Assigned", text: "Assigned", selected: overrides[f.key] === undefined, onClick: () => set(f.key, undefined) },
-            ]}
-          />
-        </div>
+        <Fragment key={f.key}>
+          <div className="design-field">
+            <span className="label">{f.title}</span>
+            <Strip
+              size="option"
+              cells={[
+                ...f.entries.map((e) => ({
+                  label: e.label,
+                  text: e.label,
+                  selected: overrides[f.key] === e.id,
+                  onClick: () => set(f.key, e.id),
+                })),
+                { label: "Assigned", text: "Assigned", selected: overrides[f.key] === undefined, onClick: () => set(f.key, undefined) },
+              ]}
+            />
+          </div>
+          {f.key === "tone" ? (
+            <div className="design-field">
+              <span className="label">Strength</span>
+              <div className="design-strength">
+                <input
+                  type="range"
+                  min={0}
+                  max={VARIATION_RULES.strength.max}
+                  step={1}
+                  value={strength}
+                  disabled={strengthOff}
+                  aria-label="Tone strength"
+                  onChange={(e) => setStrength(Number(e.currentTarget.value))}
+                />
+                <output role="none">{strength}</output>
+                <Strip
+                  size="option"
+                  cells={[{ label: "Assigned", text: "Assigned", selected: overrides.toneStrength === undefined, disabled: strengthOff, onClick: () => setStrength(undefined) }]}
+                />
+              </div>
+            </div>
+          ) : null}
+        </Fragment>
       ))}
       <div className="design-field">
         <span className="label">Border on print</span>
@@ -65,7 +100,7 @@ export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBor
         />
       </div>
       <p className="status" data-design-assigned>
-        Assigned: {derived.texture} · {derived.tone} · {derived.tier} · {derived.motion} · {derived.intro} · seed 0x
+        Assigned: {derived.texture} · {derived.tone} {derived.toneStrength} · {derived.tier} · {derived.motion} · {derived.intro} · seed 0x
         {derived.seed.toString(16)} · tint {derived.palette.tint}
       </p>
     </section>

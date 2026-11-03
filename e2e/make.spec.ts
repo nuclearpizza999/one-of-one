@@ -333,3 +333,29 @@ test("with reduced motion a tap adds no bloom", async ({ page }) => {
   await card.click({ position: { x: 6, y: 6 } });
   await expect(page.locator(".oo-light-bloom")).toHaveCount(1);
 });
+
+test("the strength slider shifts a warm or cool card, and Assigned returns the card's own strength", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  const card = page.locator("figure.oo-card");
+  const border = page.locator("img.oo-border-img");
+  const tone = page.locator(".design-field", { hasText: "Tone" });
+  const field = page.locator(".design-field", { hasText: "Strength" });
+  const slider = page.getByRole("slider", { name: "Tone strength" });
+
+  // The fixture records no time zone, so its sun is unknown and its strength is the middle.
+  await expect(card).toHaveAttribute("data-tone-strength", "13");
+  await tone.getByRole("button", { name: "Photo", exact: true }).click();
+  await expect(slider).toBeDisabled();
+  await tone.getByRole("button", { name: "Warm", exact: true }).click();
+  await expect(slider).toBeEnabled();
+  const before = (await border.getAttribute("src"))!;
+  await slider.fill("20");
+  await expect(card).toHaveAttribute("data-tone-strength", "20");
+  await expect(field.locator("output")).toHaveText("20");
+  await expect(border).not.toHaveAttribute("src", before);
+  await field.getByRole("button", { name: "Assigned" }).click();
+  await expect(card).toHaveAttribute("data-tone-strength", "13");
+  await expect(border).toHaveAttribute("src", before);
+});

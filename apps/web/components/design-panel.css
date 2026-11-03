@@ -31,3 +31,23 @@
 .design-panel .strip-cell + .strip-cell {
   border-left: 0;
 }
+
+/* The tone's strength: a slider, its value, and Assigned, on one line. */
+.design-strength {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.design-strength input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--ink);
+}
+.design-strength output {
+  min-width: 2ch;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.design-strength .strip {
+  flex: none;
+}
