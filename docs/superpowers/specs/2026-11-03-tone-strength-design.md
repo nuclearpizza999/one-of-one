@@ -14,9 +14,9 @@ Warm, Photo and Cool look the same on the card. A nudge mixes the photo's colour
 - **Founders choose.** The design panel gains a Strength slider from 0 to 20 under the Tone strip, with Assigned to return to the card's own value.
 - **Saved cards keep their look.** A card stores its strength with its design. A card saved before this has none, and its stored palette is drawn as it is. Nothing in the database is rewritten, and there is no migration.
 
-## The strength rule (`deriveTone` in `packages/card/src/variation.ts`)
+## The strength rule (`deriveToneStrength` in `packages/card/src/variation.ts`)
 
-`deriveTone` returns `{ tone, strength }`. The tone rule does not change: the sun's step plus the season's step, clamped along cool, photo, warm. The strength is `round(weak + (strong − weak) × t)`, where t runs from 0 to 1:
+`deriveTone` keeps returning the tone; `deriveToneStrength` gives its strength from the same sun and season steps. The tone rule does not change: the sun's step plus the season's step, clamped along cool, photo, warm. The strength is `round(weak + (strong − weak) × t)`, where t runs from 0 to 1:
 
 - **Warm with the sun known.** This is warm when the unclamped steps reach 2 or more. `t = (overshoot + depth) / 2`, clamped to [0, 1].
   - `overshoot` is 1 when the season adds to the sun (golden hour in summer), and 0 otherwise.
