@@ -38,6 +38,41 @@ export const MOTIONS = {
   none: { id: "none", label: "None", className: null, light: null },
   // Sheen draws in .oo-border::after; its layer is empty but takes the tap bloom.
   sheen: { id: "sheen", label: "Sheen", className: "oo-motion-sheen", light: (_shape: LightShape) => [] },
+  wave: { id: "wave", label: "Wave", className: "oo-motion-wave", light: () => [{ className: "oo-light-wave" }] },
+  visor: { id: "visor", label: "Visor", className: "oo-motion-visor", light: () => [{ className: "oo-light-bar" }] },
+  breathe: { id: "breathe", label: "Breathe", className: "oo-motion-breathe", light: () => [{ className: "oo-light-hold" }] },
+  ripple: {
+    id: "ripple",
+    label: "Ripple",
+    className: "oo-motion-ripple",
+    light: () => [{ className: "oo-light-ring" }, { className: "oo-light-ring oo-light-ring-late" }],
+  },
+  glint: {
+    id: "glint",
+    label: "Glint",
+    className: "oo-motion-glint",
+    light: (s: LightShape) => [
+      { className: "oo-light-rim", style: { "--oo-rim": `url("${glintRim(s.height)}")`, "--oo-glint": glintKeyframes(s.height).name } },
+    ],
+    keyframes: (s: LightShape) => glintKeyframes(s.height),
+  },
+  starlight: {
+    id: "starlight",
+    label: "Starlight",
+    className: "oo-motion-starlight",
+    light: (s: LightShape) =>
+      starlightPoints(s).map((p) => ({
+        className: "oo-light-point",
+        style: { left: `${r3(p.x)}cqw`, top: `${r3(p.y)}cqw`, "--oo-d": `${r3(p.duration)}s`, "--oo-dl": `${r3(p.delay)}s` },
+      })),
+  },
+  cross: {
+    id: "cross",
+    label: "Cross",
+    className: "oo-motion-cross",
+    light: () => [{ className: "oo-light-band" }, { className: "oo-light-band oo-light-band-mirror" }],
+  },
+  sway: { id: "sway", label: "Sway", className: "oo-motion-sway", light: () => [{ className: "oo-light-band" }] },
 } as const satisfies Record<string, MotionDef>;
 export type Motion = keyof typeof MOTIONS;
 

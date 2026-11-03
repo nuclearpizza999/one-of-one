@@ -227,3 +227,55 @@ test("the printed PNG carries the border, differs between textures, and can leav
   const plain = await print();
   expect(plain.equals(paper)).toBe(false);
 });
+
+/** The pieces each motion's light layer holds. None has no layer. */
+const LIGHT_PIECES: Record<string, number> = { Sheen: 0, Wave: 1, Visor: 1, Breathe: 1, Ripple: 2, Glint: 1, Starlight: 10, Cross: 2, Sway: 1 };
+
+test("each motion lights the card in a layer under the photo, and None takes it away", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  const motion = page.locator(".design-field", { hasText: "Motion" });
+  const frame = page.locator(".oo-frame");
+  const layer = page.locator("figure.oo-card > .oo-light");
+  for (const [label, count] of Object.entries(LIGHT_PIECES)) {
+    await motion.getByRole("button", { name: label, exact: true }).click();
+    await expect(frame).toHaveClass(new RegExp(`\\boo-motion-${label.toLowerCase()}\\b`));
+    await expect(layer).toBeVisible();
+    await expect(layer.locator("span")).toHaveCount(count);
+  }
+  await motion.getByRole("button", { name: "None", exact: true }).click();
+  await expect(layer).toHaveCount(0);
+  await expect(frame).not.toHaveClass(/\boo-motion-/);
+});
+
+test("with reduced motion the light is not shown", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  await page.locator(".design-field", { hasText: "Motion" }).getByRole("button", { name: "Wave", exact: true }).click();
+  await expect(page.locator(".oo-frame")).toHaveClass(/\boo-motion-wave\b/);
+  await expect(page.locator(".oo-light")).toBeHidden();
+});
+
+test("every choice in the design panel fits on a phone screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  const panel = page.locator("[data-design-panel]");
+  await expect(panel.locator(".design-field", { hasText: "Motion" }).locator(".strip-cell")).toHaveCount(11);
+  const misfits = await panel.evaluate((p) => {
+    const box = p.getBoundingClientRect();
+    return [...p.querySelectorAll<HTMLElement>(".strip-cell")]
+      .filter((c) => {
+        const cell = c.getBoundingClientRect();
+        const text = document.createRange();
+        text.selectNodeContents(c);
+        return cell.left < box.left - 0.5 || cell.right > box.right + 0.5 || text.getBoundingClientRect().width > cell.width;
+      })
+      .map((c) => c.textContent);
+  });
+  expect(misfits).toEqual([]);
+});

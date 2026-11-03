@@ -297,6 +297,187 @@
   to { background-position: 0 0; }
 }
 
+/*
+ * The Sheen family, founders' motions: Sheen's own light (white, 0.55 at the ridge,
+ * straight ramps either side) on other paths. It sits in .oo-light, over the border
+ * and under the photo and the plate (both z-index 1), so it never lands on the photo
+ * and only lightens behind the words. Pieces move by transform or opacity, never by
+ * repaint. Card.tsx sets the geometry in card units: --oo-h (card height), --oo-cx and
+ * --oo-cy (the photo's centre), --oo-r (from there to the farthest corner, plus 6).
+ */
+.oo-light {
+  --oo-light: rgba(255, 255, 255, 0.55);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.oo-light > span {
+  position: absolute;
+  display: block;
+  mix-blend-mode: screen;
+}
+
+/* Wave: Sheen's band as a train, one period of travel per loop, so there is no seam. */
+.oo-motion-wave .oo-light-wave {
+  --oo-wx: calc(92 / 0.9063);
+  top: 0;
+  height: 100%;
+  left: calc(var(--oo-wx) * -1cqw);
+  width: calc((100 + var(--oo-wx)) * 1cqw);
+  background: repeating-linear-gradient(115deg, transparent 0, transparent 16cqw, var(--oo-light) 46cqw, transparent 76cqw, transparent 92cqw);
+  animation: oo-wave 3.05s linear infinite;
+}
+@keyframes oo-wave {
+  to { transform: translateX(calc(var(--oo-wx) * 1cqw)); }
+}
+
+/* Visor: Sheen's ramp laid flat, scanning down the card and back, easing at each end. */
+.oo-motion-visor .oo-light-bar {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 56cqw;
+  margin-top: -28cqw;
+  background: linear-gradient(180deg, transparent 0%, var(--oo-light) 50%, transparent 100%);
+  animation: oo-visor 5s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes oo-visor {
+  from { transform: translateY(-6cqw); }
+  to { transform: translateY(calc((var(--oo-h) + 6) * 1cqw)); }
+}
+
+/* Breathe: Sheen's band held still; the foil brightens and fades in place, never fully dark at the edges. */
+.oo-motion-breathe .oo-light-hold {
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.16) 0%, var(--oo-light) 50%, rgba(255, 255, 255, 0.16) 100%);
+  opacity: 0;
+  animation: oo-breathe 6s ease-in-out infinite;
+}
+@keyframes oo-breathe {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* Ripple: Sheen's ramp bent into a ring, spreading from the photo's centre; two at a time. */
+.oo-light-ring {
+  left: calc(var(--oo-cx) * 1cqw);
+  top: calc(var(--oo-cy) * 1cqw);
+  width: calc(var(--oo-r) * 2cqw);
+  height: calc(var(--oo-r) * 2cqw);
+  margin: calc(var(--oo-r) * -1cqw) 0 0 calc(var(--oo-r) * -1cqw);
+  border-radius: 50%;
+}
+.oo-motion-ripple .oo-light-ring {
+  background: radial-gradient(circle closest-side, transparent 62%, var(--oo-light) 81%, transparent 100%);
+  opacity: 0;
+  animation: oo-ripple 6s linear infinite;
+}
+.oo-motion-ripple .oo-light-ring-late {
+  animation-delay: -3s;
+}
+@keyframes oo-ripple {
+  0% { transform: scale(0.5); opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: scale(1.04); opacity: 0; }
+}
+
+/* Glint: a short piece of Sheen runs round the outer edge, kept there by the rim mask; keyframes are made per card shape (motions.ts). */
+.oo-motion-glint .oo-light-rim {
+  inset: 0;
+  -webkit-mask: var(--oo-rim) 0 0 / 100% 100% no-repeat;
+  mask: var(--oo-rim) 0 0 / 100% 100% no-repeat;
+}
+.oo-motion-glint .oo-light-rim::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34cqw;
+  height: 34cqw;
+  margin: -17cqw 0 0 -17cqw;
+  background: linear-gradient(115deg, transparent 22%, var(--oo-light) 50%, transparent 78%);
+  -webkit-mask: radial-gradient(circle closest-side, #000 55%, transparent 100%);
+  mask: radial-gradient(circle closest-side, #000 55%, transparent 100%);
+  mix-blend-mode: screen;
+  animation: var(--oo-glint) 9s linear infinite;
+}
+
+/* Starlight: points of the foil catch a small passing sheen and let it go, each on its own beat. */
+.oo-motion-starlight .oo-light-point {
+  width: 12cqw;
+  height: 12cqw;
+  margin: -6cqw 0 0 -6cqw;
+  overflow: hidden;
+  border-radius: 50%;
+  -webkit-mask: radial-gradient(circle closest-side, #000 35%, transparent 100%);
+  mask: radial-gradient(circle closest-side, #000 35%, transparent 100%);
+  opacity: 0;
+  animation: oo-point-fade var(--oo-d) ease-in-out var(--oo-dl) infinite;
+}
+.oo-motion-starlight .oo-light-point::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -12cqw;
+  width: 36cqw;
+  height: 100%;
+  background: linear-gradient(115deg, transparent 38%, var(--oo-light) 50%, transparent 62%);
+  mix-blend-mode: screen;
+  animation: oo-point-pass var(--oo-d) ease-in-out var(--oo-dl) infinite;
+}
+@keyframes oo-point-fade {
+  0%, 30%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+  70% { opacity: 0; }
+}
+@keyframes oo-point-pass {
+  0%, 30% { transform: translateX(-10cqw); }
+  70%, 100% { transform: translateX(10cqw); }
+}
+
+/* Cross and Sway move a whole Sheen band, three card widths wide, by transform. */
+.oo-light-band {
+  top: 0;
+  left: -100cqw;
+  width: 300cqw;
+  height: 100%;
+  background: linear-gradient(115deg, transparent 38%, var(--oo-light) 50%, transparent 62%);
+}
+
+/* Cross: two mirrored bands pass each other mid-card and brighten where they meet. */
+.oo-motion-cross .oo-light-band {
+  animation: oo-cross 7s linear infinite;
+}
+.oo-motion-cross .oo-light-band-mirror {
+  animation-name: oo-cross-mirror;
+}
+@keyframes oo-cross {
+  from { transform: translateX(-100cqw); }
+  to { transform: translateX(100cqw); }
+}
+@keyframes oo-cross-mirror {
+  from { transform: scaleX(-1) translateX(-100cqw); }
+  to { transform: scaleX(-1) translateX(100cqw); }
+}
+
+/* Sway: Sheen crosses and comes back, easing at each end, like turning the card in your hand. */
+.oo-motion-sway .oo-light-band {
+  animation: oo-sway 4.5s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes oo-sway {
+  from { transform: translateX(-90cqw); }
+  to { transform: translateX(90cqw); }
+}
+
+/* Screen only. */
+@media print {
+  .oo-light {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .oo-intro-rise,
   .oo-intro-rise .oo-photo-wrap,
@@ -329,6 +510,9 @@
   }
   .oo-motion-sheen .oo-border::after {
     animation: none !important;
+    display: none;
+  }
+  .oo-light {
     display: none;
   }
 }

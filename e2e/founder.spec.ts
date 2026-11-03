@@ -111,6 +111,26 @@ test("a saved card that picked a retired motion opens with no motion", async ({ 
   await expect(page.locator(".oo-frame")).not.toHaveClass(/\boo-motion-/);
 });
 
+test("a founder's Glint on a saved card survives a reload, with keyframes made for the card's shape", async ({ page }) => {
+  const email = freshEmail();
+  await signIn(page, email);
+  makeFounder(email);
+  await page.reload();
+  await saveWithFoil(page);
+
+  const panel = page.locator("[data-design-panel]");
+  await panel.locator(".design-field", { hasText: "Motion" }).getByRole("button", { name: "Glint", exact: true }).click();
+  await expect(page.getByText("Saved.", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.locator("figure.oo-card")).toHaveAttribute("data-motion", "glint");
+  await expect(page.locator(".oo-frame")).toHaveClass(/\boo-motion-glint\b/);
+  const rim = page.locator(".oo-light .oo-light-rim");
+  await expect(rim).toHaveCount(1);
+  const name = await rim.evaluate((el) => getComputedStyle(el, "::before").animationName);
+  expect(name).toMatch(/^oo-glint-\d+$/);
+  await expect(page.locator(`style[data-href="${name}"]`)).toHaveCount(1);
+});
+
 test("anyone else's saved card has no design panel", async ({ page }) => {
   await signIn(page, freshEmail());
   await saveWithFoil(page);

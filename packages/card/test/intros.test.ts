@@ -65,11 +65,18 @@ describe("card.css", () => {
       expect(reducedMotion).toContain(`.oo-intro-${i.id}`);
     }
   });
-  it("has a rule for every motion, drawn in the border layer and stilled under reduced motion", () => {
+  it("draws Sheen in the border layer and every other motion in the light layer, with none under reduced motion or in print", () => {
+    expect(css).toContain(".oo-motion-sheen .oo-border::after {");
+    expect(reducedMotion).toContain(".oo-motion-sheen .oo-border::after");
     for (const m of Object.values(MOTIONS)) {
-      if (m.className === null) continue;
-      expect(css).toContain(`.${m.className} .oo-border::after {`);
-      expect(reducedMotion).toContain(`.${m.className} .oo-border::after`);
+      if (m.className === null || m.id === "sheen") continue;
+      expect(css).toContain(`.${m.className} .oo-light`);
     }
+    expect(reducedMotion).toMatch(/\.oo-light \{\s*display: none;/);
+    expect(css).toMatch(/@media print \{\s*\.oo-light \{\s*display: none;/);
+  });
+  it("lights the family with Sheen's own light", () => {
+    expect(css).toContain("--oo-light: rgba(255, 255, 255, 0.55);");
+    expect(css).toContain("linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.55) 50%, transparent 62%) 0 0 / 300% 100% no-repeat;");
   });
 });

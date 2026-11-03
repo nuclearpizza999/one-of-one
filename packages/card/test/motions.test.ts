@@ -10,7 +10,9 @@ import {
   knownMotion,
   lightGeometry,
   starlightPoints,
+  type MotionDef,
 } from "../src/motions";
+import { TIERS, type VariationInputs, deriveVariation } from "../src/variation";
 
 const SHAPES = {
   portrait: cardHeightUnits(900, 1200),
@@ -126,5 +128,57 @@ describe("glintRim", () => {
     expect(svg).toContain('viewBox="0 0 100 130"');
     expect(svg).toContain('d="M0 0H100V130H0Z M5 5H95V125H5Z"');
     expect(svg).toContain('<feGaussianBlur stdDeviation="1.3"/>');
+  });
+});
+
+describe("the Sheen family", () => {
+  const shape = { height: SHAPES.portrait, seed: 7 };
+  const classes = (id: keyof typeof MOTIONS) => ((MOTIONS[id] as MotionDef).light?.(shape) ?? []).map((p) => p.className);
+
+  it("lists None, Sheen and the eight new motions in panel order", () => {
+    expect(Object.values(MOTIONS).map((m) => m.label)).toEqual([
+      "None", "Sheen", "Wave", "Visor", "Breathe", "Ripple", "Glint", "Starlight", "Cross", "Sway",
+    ]);
+  });
+  it("gives every motion but None its frame class and a light layer", () => {
+    for (const m of Object.values(MOTIONS) as MotionDef[]) {
+      if (m.id === "none") continue;
+      expect(m.className).toBe(`oo-motion-${m.id}`);
+      expect(m.light).toBeTypeOf("function");
+    }
+  });
+  it("draws each motion's pieces", () => {
+    expect(classes("sheen")).toEqual([]);
+    expect(classes("wave")).toEqual(["oo-light-wave"]);
+    expect(classes("visor")).toEqual(["oo-light-bar"]);
+    expect(classes("breathe")).toEqual(["oo-light-hold"]);
+    expect(classes("ripple")).toEqual(["oo-light-ring", "oo-light-ring oo-light-ring-late"]);
+    expect(classes("glint")).toEqual(["oo-light-rim"]);
+    expect(classes("starlight")).toEqual(Array(STARLIGHT.points).fill("oo-light-point"));
+    expect(classes("cross")).toEqual(["oo-light-band", "oo-light-band oo-light-band-mirror"]);
+    expect(classes("sway")).toEqual(["oo-light-band"]);
+  });
+  it("places Starlight's pieces at its points, with their beats", () => {
+    const pieces = MOTIONS.starlight.light(shape);
+    const points = starlightPoints(shape);
+    pieces.forEach((piece, i) => {
+      const p = points[i]!;
+      const u = (n: number) => Number(n.toFixed(3)).toString();
+      expect(piece.style).toEqual({ left: `${u(p.x)}cqw`, top: `${u(p.y)}cqw`, "--oo-d": `${u(p.duration)}s`, "--oo-dl": `${u(p.delay)}s` });
+    });
+  });
+  it("points Glint at its keyframes and its rim", () => {
+    const [rim] = MOTIONS.glint.light(shape);
+    expect(rim!.style).toEqual({ "--oo-rim": `url("${glintRim(shape.height)}")`, "--oo-glint": glintKeyframes(shape.height).name });
+    expect(MOTIONS.glint.keyframes(shape)).toEqual(glintKeyframes(shape.height));
+  });
+  it("is never assigned: tiers name only None or Sheen, so only a founder's pick reaches a card", () => {
+    for (const t of Object.values(TIERS)) expect(["none", "sheen"]).toContain(t.motion);
+    const inputs: VariationInputs = {
+      seed: 1, takenAt: null, camera: null, number: null, placeKind: null, photoPalette: null, gps: null, utcOffsetMinutes: null,
+    };
+    for (const number of [null, 0, 1, 5, 10, 11, 100, 101, 1000, 1001, 50000]) {
+      expect(["none", "sheen"]).toContain(deriveVariation({ ...inputs, number }).motion);
+    }
   });
 });

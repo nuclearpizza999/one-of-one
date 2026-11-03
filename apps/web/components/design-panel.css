@@ -15,8 +15,19 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+/* Many choices wrap onto more rows instead of running off a phone screen; every rule stays one line wide. */
+.design-panel .strip {
+  flex-wrap: wrap;
+  border-width: 1px 0 0 1px;
+}
 .design-panel .strip-cell {
+  min-width: max-content;
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
   font-size: 9px;
   letter-spacing: 0.08em;
   padding: 0 2px;
+}
+.design-panel .strip-cell + .strip-cell {
+  border-left: 0;
 }

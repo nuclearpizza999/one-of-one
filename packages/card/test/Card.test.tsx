@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Card, startsInCaption } from "../src/Card";
+import type { Motion } from "../src/motions";
+import type { Variation } from "../src/variation";
 
 const caption = {
   place: "Seoul, South Korea",
@@ -20,6 +22,38 @@ const variation = {
 } as const;
 
 describe("Card with a photo", () => {
+  it("lights every motion but None in a layer between the border and the photo", () => {
+    const pieces: Record<string, number> = { sheen: 0, wave: 1, visor: 1, breathe: 1, ripple: 2, glint: 1, starlight: 10, cross: 2, sway: 1 };
+    for (const [motion, count] of Object.entries(pieces)) {
+      const v: Variation = { ...variation, motion: motion as Motion };
+      const html = renderToStaticMarkup(<Card photo={photo} {...caption} variation={v} />);
+      expect(html).toContain(`class="oo-frame oo-motion-${motion}"`);
+      const layer = /<div class="oo-light" aria-hidden="true" style="([^"]*)">(.*?)<\/div>/.exec(html);
+      expect(layer).not.toBeNull();
+      expect(layer![1]).toContain("--oo-h:141");
+      expect((layer![2]!.match(/<span /g) ?? []).length).toBe(count);
+      expect(html.indexOf('class="oo-border"')).toBeLessThan(html.indexOf('class="oo-light"'));
+      expect(html.indexOf('class="oo-light"')).toBeLessThan(html.indexOf('class="oo-photo-wrap"'));
+    }
+  });
+
+  it("has no light layer for None or without a photo", () => {
+    expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={variation} />)).not.toContain("oo-light");
+    const wave: Variation = { ...variation, motion: "wave" };
+    expect(renderToStaticMarkup(<Card {...caption} variation={wave} />)).not.toContain("oo-light");
+  });
+
+  it("renders Glint's keyframes for the card's shape, hoisted", () => {
+    const glint: Variation = { ...variation, motion: "glint" };
+    const html = renderToStaticMarkup(<Card photo={photo} {...caption} variation={glint} />);
+    // React also hoists a preload link for the photo ahead of it, so the style leads the card's markup, not the string.
+    const hoisted = html.indexOf('<style data-precedence="oo-motion" data-href="oo-glint-14100">@keyframes oo-glint-14100 {');
+    expect(hoisted).toBeGreaterThanOrEqual(0);
+    expect(hoisted).toBeLessThan(html.indexOf('<div class="oo-frame'));
+    expect(html.split('data-href="oo-glint-14100"').length).toBe(2);
+    expect(html).toContain("--oo-glint:oo-glint-14100");
+  });
+
   it("renders the photo whole at its natural dimensions", () => {
     const html = renderToStaticMarkup(<Card photo={photo} {...caption} />);
     expect(html).toContain('<img class="oo-photo" src="blob:photo" alt="" width="900" height="1200"/>');

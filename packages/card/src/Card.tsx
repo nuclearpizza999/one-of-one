@@ -6,7 +6,7 @@ import { CARD_FONT_FAMILY } from "./fonts";
 import { borderDataUrl } from "./border";
 import { CARD, cardHeightUnits } from "./layout";
 import type { LineKind } from "./layout";
-import { MOTIONS } from "./motions";
+import { MOTIONS, type MotionDef, lightGeometry } from "./motions";
 import type { Variation } from "./variation";
 
 export interface CardPhoto {
@@ -89,8 +89,13 @@ export function Card({
 }: CardProps) {
   const empty = photo === null;
   const pickable = empty && onPick !== undefined;
-  const motionClass = variation ? MOTIONS[variation.motion].className : null;
-  const frameClass = ["oo-frame", intro ? `oo-intro-${intro}` : null, motionClass].filter(Boolean).join(" ");
+  const motion: MotionDef | null = variation ? MOTIONS[variation.motion] : null;
+  const frameClass = ["oo-frame", intro ? `oo-intro-${intro}` : null, motion?.className ?? null].filter(Boolean).join(" ");
+  // The light layer: every motion but None, on a card with a photo (the empty mat has no border to light).
+  const height = photo ? cardHeightUnits(photo.width, photo.height) : null;
+  const shape = variation && height !== null ? { height, seed: variation.seed } : null;
+  const lightPieces = shape && motion?.light ? motion.light(shape) : null;
+  const keyframes = shape && lightPieces ? (motion?.keyframes?.(shape) ?? null) : null;
 
   const allLines: Array<{ kind: LineKind; text: string }> = [
     { kind: "place", text: place },
@@ -141,11 +146,24 @@ export function Card({
           <div className="oo-border">
             <img
               className="oo-border-img"
-              src={borderDataUrl(variation, cardHeightUnits(photo.width, photo.height))}
+              src={borderDataUrl(variation, height!)}
               alt=""
               draggable={false}
             />
           </div>
+        ) : null}
+        {lightPieces && height !== null ? (
+          <div className="oo-light" aria-hidden="true" style={lightGeometry(height) as CSSProperties}>
+            {lightPieces.map((p, i) => (
+              <span key={i} className={p.className} style={p.style as CSSProperties | undefined} />
+            ))}
+          </div>
+        ) : null}
+        {keyframes ? (
+          // React hoists this into the head and renders each name once, so cards of one shape share it.
+          <style href={keyframes.name} precedence="oo-motion">
+            {keyframes.css}
+          </style>
         ) : null}
         <div className="oo-photo-wrap">
           {photo ? (
