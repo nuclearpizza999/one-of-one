@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties, FocusEvent, KeyboardEvent, MouseEvent } from "react";
+import { useRef, useState } from "react";
 import type { IntroId } from "./intros";
 import { CARD_FONT_FAMILY } from "./fonts";
 import { borderDataUrl } from "./border";
@@ -72,6 +73,18 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** At most this many tap blooms show at once; a tap beyond it is ignored. */
+const MAX_BLOOMS = 4;
+
+interface Bloom {
+  id: number;
+  /** Card units from the card's top-left corner. */
+  x: number;
+  y: number;
+}
+
+const units = (n: number): string => Number(n.toFixed(3)).toString();
+
 export function Card({
   photo = null,
   place,
@@ -96,6 +109,21 @@ export function Card({
   const shape = variation && height !== null ? { height, seed: variation.seed } : null;
   const lightPieces = shape && motion?.light ? motion.light(shape) : null;
   const keyframes = shape && lightPieces ? (motion?.keyframes?.(shape) ?? null) : null;
+  const [blooms, setBlooms] = useState<readonly Bloom[]>([]);
+  const nextBloom = useRef(0);
+  // A tap on a card with a light layer sends Sheen's light out from the finger. A click, not a press, so a
+  // scroll that starts on the card does not bloom. Never from a caption line being typed, and never under
+  // reduced motion: the layer is hidden there, so the bloom's animation would never end to remove it.
+  const onBloom = (e: MouseEvent<HTMLElement>) => {
+    if (startsInCaption(e.target)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const box = e.currentTarget.getBoundingClientRect();
+    const unit = box.width / CARD.width;
+    const bloom: Bloom = { id: nextBloom.current, x: (e.clientX - box.left) / unit, y: (e.clientY - box.top) / unit };
+    nextBloom.current += 1;
+    setBlooms((bs) => (bs.length >= MAX_BLOOMS ? bs : [...bs, bloom]));
+  };
+  const endBloom = (id: number) => setBlooms((bs) => bs.filter((b) => b.id !== id));
 
   const allLines: Array<{ kind: LineKind; text: string }> = [
     { kind: "place", text: place },
@@ -139,7 +167,7 @@ export function Card({
         role={pickable ? "button" : undefined}
         tabIndex={pickable ? 0 : undefined}
         aria-label={pickable ? "Add a photo" : undefined}
-        onClick={pickable ? onPickClick : undefined}
+        onClick={pickable ? onPickClick : lightPieces ? onBloom : undefined}
         onKeyDown={pickable ? onPickKey : undefined}
       >
         {variation && photo ? (
@@ -156,6 +184,14 @@ export function Card({
           <div className="oo-light" aria-hidden="true" style={lightGeometry(height) as CSSProperties}>
             {lightPieces.map((p, i) => (
               <span key={i} className={p.className} style={p.style as CSSProperties | undefined} />
+            ))}
+            {blooms.map((b) => (
+              <span
+                key={`bloom-${b.id}`}
+                className="oo-light-bloom"
+                style={{ "--oo-cx": units(b.x), "--oo-cy": units(b.y) } as CSSProperties}
+                onAnimationEnd={() => endBloom(b.id)}
+              />
             ))}
           </div>
         ) : null}

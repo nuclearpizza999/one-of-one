@@ -360,7 +360,8 @@
 }
 
 /* Ripple: Sheen's ramp bent into a ring, spreading from the photo's centre; two at a time. */
-.oo-light-ring {
+.oo-light-ring,
+.oo-light-bloom {
   left: calc(var(--oo-cx) * 1cqw);
   top: calc(var(--oo-cy) * 1cqw);
   width: calc(var(--oo-r) * 2cqw);
@@ -381,6 +382,18 @@
   12% { opacity: 1; }
   80% { opacity: 1; }
   100% { transform: scale(1.04); opacity: 0; }
+}
+
+/* Tap, on every card with a motion: a ring of Sheen's light from the finger. Card.tsx adds it at the tap and removes it when it ends. */
+.oo-light-bloom {
+  --oo-r: 52;
+  background: radial-gradient(circle closest-side, transparent 30%, var(--oo-light) 72%, transparent 100%);
+  animation: oo-bloom 1.7s cubic-bezier(0.25, 0.5, 0.45, 1) forwards;
+}
+@keyframes oo-bloom {
+  0% { transform: scale(0.15); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
 }
 
 /* Glint: a short piece of Sheen runs round the outer edge, kept there by the rim mask; keyframes are made per card shape (motions.ts). */

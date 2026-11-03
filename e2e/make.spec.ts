@@ -279,3 +279,45 @@ test("every choice in the design panel fits on a phone screen", async ({ page })
   });
   expect(misfits).toEqual([]);
 });
+
+test("a tap on a card with a motion blooms the light from the finger, and the bloom fades away", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  const card = page.locator("figure.oo-card");
+  const bloom = page.locator(".oo-light .oo-light-bloom");
+
+  await page.locator(".design-field", { hasText: "Motion" }).getByRole("button", { name: "Sheen", exact: true }).click();
+  await card.click({ position: { x: 6, y: 6 } });
+  await expect(bloom).toHaveCount(1);
+  // At the tap, in card units: 6 px into a card 100 units wide.
+  const width = (await card.boundingBox())!.width;
+  const cx = Number(await bloom.evaluate((el) => getComputedStyle(el).getPropertyValue("--oo-cx")));
+  expect(Math.abs(cx - (6 * 100) / width)).toBeLessThan(0.5);
+  await expect(bloom).toHaveCount(0, { timeout: 2500 });
+
+  // A tap in a caption line being typed does not bloom; the next tap on the mat does, so one bloom shows.
+  await page.locator(".oo-line-place").click();
+  await card.click({ position: { x: 6, y: 6 } });
+  await expect(bloom).toHaveCount(1);
+  await expect(bloom).toHaveCount(0, { timeout: 2500 });
+
+  // At most four at once.
+  for (let i = 0; i < 5; i += 1) await card.click({ position: { x: 6 + i, y: 6 } });
+  await expect(bloom).toHaveCount(4);
+});
+
+test("with reduced motion a tap adds no bloom", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  await page.locator(".design-field", { hasText: "Motion" }).getByRole("button", { name: "Wave", exact: true }).click();
+  const card = page.locator("figure.oo-card");
+  await card.click({ position: { x: 6, y: 6 } });
+  // A bloom added here would never end (the layer is hidden), so it would still be counted after motion returns.
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(page.locator(".oo-light")).toBeVisible();
+  await card.click({ position: { x: 6, y: 6 } });
+  await expect(page.locator(".oo-light-bloom")).toHaveCount(1);
+});
