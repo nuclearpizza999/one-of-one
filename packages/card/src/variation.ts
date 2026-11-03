@@ -54,7 +54,7 @@ export function whiteBalance(p: Palette, direction: 1 | -1, steps: number): Pale
   if (hexToHsl(p.tint)[1] < GREY_SATURATION) return p;
   const shift = (hex: string): string => {
     const n = Number.parseInt(hex.slice(1), 16);
-    const channel = (v: number) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0");
+    const channel = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
     return `#${channel(((n >> 16) & 255) + direction * steps)}${channel((n >> 8) & 255)}${channel((n & 255) - direction * steps)}`;
   };
   return {

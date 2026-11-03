@@ -28,3 +28,9 @@ export function clearStoredToneStrength(cardId: string): void {
   const out = psql(`update public.cards set variation = variation - 'toneStrength' where id = ${quote(cardId)};`);
   if (!/^UPDATE 1$/m.test(out)) throw new Error(`clearStoredToneStrength: no single card matched ${cardId} (psql said: ${out.trim()})`);
 }
+
+/** Writes a palette straight into a saved card's stored variation (tests only), as a card saved before the wash or the strength existed holds one. */
+export function setStoredPalette(cardId: string, palette: { tint: string; foil: [string, string] }): void {
+  const out = psql(`update public.cards set variation = jsonb_set(variation, '{palette}', ${quote(JSON.stringify(palette))}::jsonb) where id = ${quote(cardId)};`);
+  if (!/^UPDATE 1$/m.test(out)) throw new Error(`setStoredPalette: no single card matched ${cardId} (psql said: ${out.trim()})`);
+}

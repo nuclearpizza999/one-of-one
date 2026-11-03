@@ -1,7 +1,7 @@
 import path from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { freshEmail, signIn } from "./auth";
-import { clearStoredToneStrength, makeFounder, setStoredMotion } from "./founder";
+import { clearStoredToneStrength, makeFounder, setStoredMotion, setStoredPalette } from "./founder";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -130,20 +130,23 @@ test("a founder's tone strength on a saved card survives a reload", async ({ pag
   await expect(card).toHaveAttribute("data-tone-strength", "19");
 });
 
-test("a card saved before tone strengths opens at the middle strength with its colours unchanged", async ({ page }) => {
+test("a card saved before tone strengths opens at the middle strength with its stored colours drawn as they are", async ({ page }) => {
   const email = freshEmail();
   await signIn(page, email);
   makeFounder(email);
   await page.reload();
   await saveWithFoil(page);
   const cardId = new URL(page.url()).pathname.split("/").pop()!;
-  const border = page.locator("img.oo-border-img");
-  const before = (await border.getAttribute("src"))!;
 
+  // As a card saved before Nov 3, 2026 holds it: no strength, and an older palette with no wash.
   clearStoredToneStrength(cardId);
+  setStoredPalette(cardId, { tint: "#123456", foil: ["#e0e8f0", "#9aa8b8"] });
   await page.reload();
   await expect(page.locator("figure.oo-card")).toHaveAttribute("data-tone-strength", "13");
-  await expect(border).toHaveAttribute("src", before);
+  // The foil texture paints the stored foil stops; worked out again, they would differ and gain a wash.
+  const src = (await page.locator("img.oo-border-img").getAttribute("src"))!;
+  expect(src).toContain(encodeURIComponent("#e0e8f0"));
+  expect(src).toContain(encodeURIComponent("#9aa8b8"));
 });
 
 test("a founder's Glint on a saved card survives a reload, with keyframes made for the card's shape", async ({ page }) => {

@@ -7,7 +7,7 @@ import type { Palette } from "./variation";
  * must keep the caption readable: WCAG body-text contrast for the place and
  * date lines in the caption ink, large-text contrast for the lighter
  * coordinates line. The neutral grey clears it as written; a palette made from
- * a photo's colours, nudged or not, is lightened until it does.
+ * a photo's colours, shifted or not, is lightened until it does.
  */
 
 export const CAPTION_INK = CARD.ink;

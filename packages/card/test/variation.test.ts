@@ -235,6 +235,10 @@ describe("deriveTexture", () => {
 const rgb = (hex: string) => [1, 3, 5].map((k) => Number.parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
 
 describe("whiteBalance", () => {
+  it("always gives whole #rrggbb colours, even for a fractional strength", () => {
+    const p = whiteBalance(blue, 1, 12.5);
+    for (const c of [p.tint, p.foil[0], p.foil[1], p.wash!]) expect(c).toMatch(/^#[0-9a-f]{6}$/);
+  });
   const blue: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"], wash: "#e3ebf2" };
   it("adds to red and takes from blue for warm, in the wash, the tint and both foil stops", () => {
     const w = whiteBalance(blue, 1, 10);

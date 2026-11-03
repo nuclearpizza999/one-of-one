@@ -79,6 +79,7 @@ export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBor
                   aria-label="Tone strength"
                   onChange={(e) => setStrength(Number(e.currentTarget.value))}
                 />
+                {/* Not a status region: the slider announces its own value, and the page's one status line stays the app's. */}
                 <output role="none">{strength}</output>
                 <Strip
                   size="option"
