@@ -6,10 +6,10 @@ import type { Variation } from "@one-of-one/card";
  * the database's design guard refuses anyone else's (42501). Throws on any error.
  */
 export async function updateCardDesign(supabase: SupabaseClient, cardId: string, v: Variation): Promise<void> {
-  const { texture, tone, palette, tier, motion, intro } = v;
+  const { texture, tone, palette, tier, motion, toneStrength, intro } = v;
   const { data, error } = await supabase
     .from("cards")
-    .update({ variation: { texture, tone, palette, tier, motion }, intro })
+    .update({ variation: { texture, tone, palette, tier, motion, toneStrength }, intro })
     .eq("id", cardId)
     .select("id");
   if (error) throw error;

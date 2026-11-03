@@ -19,6 +19,7 @@ const variation = {
   motion: "none",
   intro: "rise",
   seed: 7,
+  toneStrength: 13,
 } as const;
 
 describe("Card with a photo", () => {
@@ -109,6 +110,7 @@ describe("Card with a photo", () => {
     expect(html.indexOf('class="oo-border"')).toBeLessThan(html.indexOf('class="oo-photo-wrap"'));
     expect(html).toContain('data-texture="grain"');
     expect(html).toContain('data-tone="warm"');
+    expect(html).toContain('data-tone-strength="13"');
     expect(html).toContain('data-tier="fine"');
     expect(html).toContain('data-motion="none"');
     expect(html).not.toContain("--oo-band");

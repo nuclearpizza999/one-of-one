@@ -22,6 +22,7 @@ const photo = {
     motion: "none" as const,
     intro: "rise" as const,
     seed: 2263211217,
+    toneStrength: 13,
   },
 };
 const caption = { place: "Seoul, South Korea", date: "July 1st, 2026", coords: "37.5563° N, 126.9236° E" };
@@ -61,7 +62,7 @@ describe("cardRow", () => {
       exif_lat: 37.5563,
       exif_lng: 126.9236,
       camera: { make: "Apple", model: "iPhone 15 Pro" },
-      variation: { texture: "paper", tone: "warm", palette: { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] }, tier: "standard", motion: "none" },
+      variation: { texture: "paper", tone: "warm", palette: { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] }, tier: "standard", motion: "none", toneStrength: 13 },
       intro: "rise",
       variation_seed: 2263211217,
     });

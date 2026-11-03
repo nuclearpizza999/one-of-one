@@ -41,7 +41,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
   const variation = useMemo<Variation | null>(
     () =>
       texture
-        ? { texture, tone: "photo", palette: paletteFor("photo", DEV_PALETTE), tier, motion: "none", intro: "rise", seed: 12345 }
+        ? { texture, tone: "photo", palette: paletteFor("photo", DEV_PALETTE, 13), tier, motion: "none", intro: "rise", seed: 12345, toneStrength: 13 }
         : null,
     [texture, tier],
   );

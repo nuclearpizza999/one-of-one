@@ -162,6 +162,7 @@ export function Card({
         data-editable={editable ? "true" : "false"}
         data-texture={variation?.texture}
         data-tone={variation?.tone}
+        data-tone-strength={variation?.toneStrength}
         data-tier={variation?.tier}
         data-motion={variation?.motion}
         role={pickable ? "button" : undefined}

@@ -78,11 +78,13 @@ describe("the caption floor over every tone", () => {
           const h = hue / 360;
           const sample = { tint: hslToHex(h, s, l), foil: [hslToHex(h, s, 0.84), hslToHex(h, s, l * 0.9)] as const };
           for (const tone of Object.keys(TONES) as Tone[]) {
-            const p = paletteFor(tone, sample);
-            for (const c of [p.wash!, ...p.foil]) {
-              const label = `${tone} ${hue}/${s}/${l} ${c}`;
-              expect(contrastRatio(c, CAPTION_INK), label).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
-              expect(contrastRatio(c, COORDS_INK), label).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+            for (const strength of [0, 6, 13, 20]) {
+              const p = paletteFor(tone, sample, strength);
+              for (const c of [p.wash!, ...p.foil]) {
+                const label = `${tone} ${strength} ${hue}/${s}/${l} ${c}`;
+                expect(contrastRatio(c, CAPTION_INK), label).toBeGreaterThanOrEqual(CAPTION_MIN_CONTRAST);
+                expect(contrastRatio(c, COORDS_INK), label).toBeGreaterThanOrEqual(COORDS_MIN_CONTRAST);
+              }
             }
           }
         }

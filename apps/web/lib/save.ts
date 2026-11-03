@@ -55,14 +55,14 @@ export interface CardRow {
   exif_lat: number | null;
   exif_lng: number | null;
   camera: { make: string; model: string } | null;
-  variation: Pick<Variation, "texture" | "tone" | "palette" | "tier" | "motion">;
+  variation: Pick<Variation, "texture" | "tone" | "palette" | "tier" | "motion" | "toneStrength">;
   intro: Variation["intro"];
   variation_seed: number;
 }
 
 export function cardRow({ photo, caption, userId, placeId, paths }: CardRowInput): CardRow {
   if (!photo.id) throw new Error("a card needs an id before it is saved");
-  const { texture, tone, palette, tier, motion, intro, seed } = photo.variation;
+  const { texture, tone, palette, tier, motion, toneStrength, intro, seed } = photo.variation;
   return {
     id: photo.id,
     user_id: userId,
@@ -80,7 +80,7 @@ export function cardRow({ photo, caption, userId, placeId, paths }: CardRowInput
     exif_lat: photo.meta.gps?.lat ?? null,
     exif_lng: photo.meta.gps?.lng ?? null,
     camera: photo.meta.camera,
-    variation: { texture, tone, palette, tier, motion },
+    variation: { texture, tone, palette, tier, motion, toneStrength },
     intro,
     variation_seed: seed,
   };

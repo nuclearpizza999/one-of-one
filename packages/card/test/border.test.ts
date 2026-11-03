@@ -11,6 +11,7 @@ const base: Variation = {
   motion: "none",
   intro: "rise",
   seed: 12345,
+  toneStrength: 13,
 };
 const H = 141; // 900 × 1200 photo
 
@@ -50,7 +51,7 @@ describe("borderSvg", () => {
       for (const tone of Object.keys(TONES) as Tone[]) {
         for (const tier of Object.keys(TIERS) as Tier[]) {
           const label = `${texture}/${tone}/${tier}`;
-          const withoutDefs = stripSvg(borderSvg({ ...base, texture, tone, tier, palette: paletteFor(tone, null) }, H));
+          const withoutDefs = stripSvg(borderSvg({ ...base, texture, tone, tier, palette: paletteFor(tone, null, 13) }, H));
           const groups = withoutDefs.match(MAT_GROUP) ?? [];
           expect(groups, label).toHaveLength(1);
           expect(groups.reduce((rest, g) => rest.replace(g, ""), withoutDefs).trim(), label).toBe("");

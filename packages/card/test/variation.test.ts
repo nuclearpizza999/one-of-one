@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hexToHsl } from "../src/colour";
+import { hexToHsl, hslToHex } from "../src/colour";
 import { CAPTION_INK, CAPTION_MIN_CONTRAST, COORDS_INK, COORDS_MIN_CONTRAST, contrastRatio, withCaptionContrast } from "../src/contrast";
 import { INTROS, assignIntro } from "../src/intros";
 import {
@@ -13,12 +13,14 @@ import {
   deriveTexture,
   deriveTier,
   deriveTone,
+  deriveToneStrength,
   deriveVariation,
-  nudgePalette,
+  knownToneStrength,
   paletteFor,
   seasonStep,
   sunStep,
   variationSeed,
+  whiteBalance,
   withOverrides,
   withWash,
 } from "../src/variation";
@@ -41,10 +43,10 @@ describe("registries", () => {
   it("tiers point at registered motions", () => {
     for (const t of Object.values(TIERS)) expect(MOTIONS[t.motion]).toBeDefined();
   });
-  it("tones are nudges of the photo's colour, the photo's colour itself, or the neutral grey", () => {
+  it("tones are white-balance shifts of the photo's colour, the photo's colour itself, or the neutral grey", () => {
     expect(Object.keys(TONES)).toEqual(["warm", "photo", "cool", "neutral"]);
-    expect(TONES.warm).toMatchObject({ source: "nudge", direction: 1 });
-    expect(TONES.cool).toMatchObject({ source: "nudge", direction: -1 });
+    expect(TONES.warm).toMatchObject({ source: "shift", direction: 1 });
+    expect(TONES.cool).toMatchObject({ source: "shift", direction: -1 });
     expect(TONES.photo.source).toBe("photo");
     expect(TONES.neutral.source).toBe("neutral");
     for (const tone of Object.values(TONES)) expect(JSON.stringify(tone)).not.toMatch(/#[0-9a-f]{3,6}/i);
@@ -150,6 +152,53 @@ describe("deriveTone", () => {
   });
 });
 
+describe("deriveToneStrength", () => {
+  const strength = (d: Date, gps: { lat: number; lng: number }, offset: number | null) => deriveToneStrength({ takenAt: d, gps, utcOffsetMinutes: offset });
+  // Seoul, March 15 (spring, no season step), June 21 (summer), January 15 (winter); +09:00.
+  const spring = (lo: number, hi: number) => minuteWithSun(2026, 2, 15, 540, SEOUL, lo, hi, 15);
+  const summer = (lo: number, hi: number) => minuteWithSun(2026, 5, 21, 540, SEOUL, lo, hi, 15);
+
+  it("runs weak to strong through golden hour, with summer adding half the range", () => {
+    expect(strength(spring(5.5, 6), SEOUL, 540)).toBe(6);
+    expect(strength(spring(-4, -3.6), SEOUL, 540)).toBe(13);
+    expect(strength(summer(5.5, 6), SEOUL, 540)).toBe(13);
+    expect(strength(summer(-4, -3.6), SEOUL, 540)).toBe(20);
+  });
+  it("runs weak to strong into the night, with winter adding half the range", () => {
+    expect(strength(spring(-4.4, -4.05), SEOUL, 540)).toBe(6);
+    expect(strength(new Date(2026, 2, 15, 0, 30), SEOUL, 540)).toBe(13);
+    expect(strength(new Date(2026, 0, 15, 0, 30), SEOUL, 540)).toBe(20);
+  });
+  it("is weak when the season alone makes a midday photo warm or cool", () => {
+    expect(atPlace(new Date(2026, 5, 21, 12, 34), SEOUL, 540)).toBe("warm");
+    expect(strength(new Date(2026, 5, 21, 12, 34), SEOUL, 540)).toBe(6);
+    expect(atPlace(new Date(2026, 0, 15, 12, 0), SEOUL, 540)).toBe("cool");
+    expect(strength(new Date(2026, 0, 15, 12, 0), SEOUL, 540)).toBe(6);
+  });
+  it("is the middle when the sun's position is unknown, for the photo's colour, and without a time", () => {
+    expect(deriveToneStrength({ takenAt: at(2, 7), gps: null, utcOffsetMinutes: null })).toBe(13);
+    expect(strength(at(0, 12), SEOUL, null)).toBe(13);
+    expect(strength(new Date(2026, 2, 15, 12, 30), SEOUL, 540)).toBe(13);
+    expect(deriveToneStrength({ takenAt: null, gps: SEOUL, utcOffsetMinutes: 540 })).toBe(13);
+  });
+  it("stays within weak and strong", () => {
+    for (let m = 0; m < 24 * 60; m += 7) {
+      for (const month of [0, 2, 5]) {
+        const s = strength(new Date(2026, month, 15, Math.floor(m / 60), m % 60), SEOUL, 540);
+        expect(s).toBeGreaterThanOrEqual(VARIATION_RULES.strength.weak);
+        expect(s).toBeLessThanOrEqual(VARIATION_RULES.strength.strong);
+      }
+    }
+  });
+});
+
+describe("knownToneStrength", () => {
+  it("keeps a whole strength from 0 to the slider's top and reads anything else as the middle", () => {
+    for (const s of [0, 6, 13, 20]) expect(knownToneStrength(s)).toBe(s);
+    for (const s of [undefined, null, -1, 21, 6.5, "13", Number.NaN]) expect(knownToneStrength(s)).toBe(13);
+  });
+});
+
 describe("deriveTier", () => {
   it.each([
     [1, "animated"], [10, "animated"], [11, "foil"], [100, "foil"],
@@ -185,28 +234,27 @@ describe("deriveTexture", () => {
 
 const rgb = (hex: string) => [1, 3, 5].map((k) => Number.parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
 
-describe("nudgePalette", () => {
-  const blue: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"] };
-  const orange: Palette = { tint: "#c07a3a", foil: ["#f0d6bc", "#c88a50"] };
-  it("warms a cool colour: more red, less blue, in the tint and both foil stops", () => {
-    const w = nudgePalette(blue, 1);
-    for (const [before, after] of [[blue.tint, w.tint], [blue.foil[0], w.foil[0]], [blue.foil[1], w.foil[1]]] as const) {
-      expect(rgb(after)[0]).toBeGreaterThan(rgb(before)[0]);
-      expect(rgb(after)[2]).toBeLessThan(rgb(before)[2]);
+describe("whiteBalance", () => {
+  const blue: Palette = { tint: "#4466aa", foil: ["#c8d4ee", "#6a84c0"], wash: "#e3ebf2" };
+  it("adds to red and takes from blue for warm, in the wash, the tint and both foil stops", () => {
+    const w = whiteBalance(blue, 1, 10);
+    for (const [before, after] of [[blue.tint, w.tint], [blue.foil[0], w.foil[0]], [blue.foil[1], w.foil[1]], [blue.wash!, w.wash!]] as const) {
+      expect(rgb(after)[0]).toBe(rgb(before)[0] + 10);
+      expect(rgb(after)[1]).toBe(rgb(before)[1]);
+      expect(rgb(after)[2]).toBe(rgb(before)[2] - 10);
     }
   });
-  it("cools a warm colour: more blue, less red", () => {
-    const c = nudgePalette(orange, -1);
-    expect(rgb(c.tint)[2]).toBeGreaterThan(rgb(orange.tint)[2]);
-    expect(rgb(c.tint)[0]).toBeLessThan(rgb(orange.tint)[0]);
+  it("does the reverse for cool, and clamps at 0 and 255", () => {
+    const c = whiteBalance(blue, -1, 10);
+    expect(rgb(c.tint)).toEqual([rgb(blue.tint)[0] - 10, rgb(blue.tint)[1], rgb(blue.tint)[2] + 10]);
+    expect(rgb(whiteBalance({ tint: "#05a0fa", foil: ["#05a0fa", "#05a0fa"] }, -1, 20).tint)).toEqual([0, 160, 255]);
   });
-  it("keeps the photo's colour recognisable: lightness within a few points", () => {
-    const w = nudgePalette(blue, 1);
-    expect(Math.abs(hexToHsl(w.tint)[2] - hexToHsl(blue.tint)[2])).toBeLessThan(0.05);
+  it("leaves a palette without a wash without one", () => {
+    expect(whiteBalance({ tint: blue.tint, foil: blue.foil }, 1, 6).wash).toBeUndefined();
   });
-  it("leaves a grey palette alone: a photo with no colour gets none from a nudge", () => {
-    expect(nudgePalette(NEUTRAL_PALETTE, 1)).toBe(NEUTRAL_PALETTE);
-    expect(nudgePalette(NEUTRAL_PALETTE, -1)).toBe(NEUTRAL_PALETTE);
+  it("leaves a grey palette alone: a photo with no colour gets none from a tone", () => {
+    expect(whiteBalance(NEUTRAL_PALETTE, 1, 20)).toBe(NEUTRAL_PALETTE);
+    expect(whiteBalance(withWash(NEUTRAL_PALETTE), -1, 20)).toEqual(withWash(NEUTRAL_PALETTE));
   });
 });
 
@@ -230,25 +278,29 @@ describe("withWash", () => {
 describe("paletteFor", () => {
   it("gives every tone a wash", () => {
     for (const tone of Object.keys(TONES) as Tone[]) {
-      expect(paletteFor(tone, photoPalette).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
-      expect(paletteFor(tone, null).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
+      expect(paletteFor(tone, photoPalette, 13).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
+      expect(paletteFor(tone, null, 13).wash, tone).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
   it("returns the sampled palette with its wash for the photo tone", () => {
-    expect(paletteFor("photo", photoPalette)).toEqual(withWash(photoPalette));
+    expect(paletteFor("photo", photoPalette, 13)).toEqual(withWash(photoPalette));
   });
-  it("nudges the sampled palette for warm and cool", () => {
-    expect(paletteFor("warm", photoPalette)).toEqual(withCaptionContrast(withWash(nudgePalette(photoPalette, 1))));
-    expect(paletteFor("cool", photoPalette)).toEqual(withCaptionContrast(withWash(nudgePalette(photoPalette, -1))));
-    expect(paletteFor("warm", photoPalette).tint).not.toBe(photoPalette.tint);
+  it("shifts the sampled palette's white balance by the strength for warm and cool", () => {
+    expect(paletteFor("warm", photoPalette, 13)).toEqual(withCaptionContrast(whiteBalance(withWash(photoPalette), 1, 13)));
+    expect(paletteFor("cool", photoPalette, 6)).toEqual(withCaptionContrast(whiteBalance(withWash(photoPalette), -1, 6)));
+    expect(paletteFor("warm", photoPalette, 20)).not.toEqual(paletteFor("warm", photoPalette, 6));
+  });
+  it("ignores the strength for the photo's colour and the neutral grey", () => {
+    expect(paletteFor("photo", photoPalette, 20)).toEqual(paletteFor("photo", photoPalette, 0));
+    expect(paletteFor("neutral", photoPalette, 20)).toEqual(paletteFor("neutral", photoPalette, 0));
   });
   it("is the neutral grey for neutral, and for any tone without a sample", () => {
-    expect(paletteFor("neutral", photoPalette).tint).toBe(NEUTRAL_PALETTE.tint);
-    for (const tone of Object.keys(TONES) as Tone[]) expect(paletteFor(tone, null).tint, tone).toBe(NEUTRAL_PALETTE.tint);
+    expect(paletteFor("neutral", photoPalette, 13).tint).toBe(NEUTRAL_PALETTE.tint);
+    for (const tone of Object.keys(TONES) as Tone[]) expect(paletteFor(tone, null, 13).tint, tone).toBe(NEUTRAL_PALETTE.tint);
   });
   it("lightens a sampled palette's foil until the caption keeps its contrast floor", () => {
     const dark: Palette = { tint: "#223355", foil: ["#8899bb", "#223355"] };
-    const p = paletteFor("photo", dark);
+    const p = paletteFor("photo", dark, 13);
     expect(p.tint).toBe(dark.tint);
     expect(p.foil[1]).not.toBe(dark.foil[1]);
     for (const c of [...p.foil, p.wash!]) {
@@ -258,6 +310,26 @@ describe("paletteFor", () => {
   });
   it("keeps the neutral grey as written", () => {
     expect(NEUTRAL_PALETTE).toEqual({ tint: "#8a8a8a", foil: ["#ececec", "#9c9c9c"] });
+  });
+});
+
+describe("Warm and Cool are visible", () => {
+  it("move a photo's wash apart and away from Photo even at the weak end, for every hue", () => {
+    const { weak } = VARIATION_RULES.strength;
+    const redOverBlue = (c: [number, number, number]) => c[0] - c[2];
+    for (let hue = 0; hue < 360; hue += 15) {
+      for (const s of [0.2, 0.45, 0.7]) {
+        for (const l of [0.3, 0.5, 0.7]) {
+          const h = hue / 360;
+          const sample: Palette = { tint: hslToHex(h, s, l), foil: [hslToHex(h, s, 0.85), hslToHex(h, s, 0.45)] };
+          const [w, p, c] = (["warm", "photo", "cool"] as const).map((t) => rgb(paletteFor(t, sample, weak).wash!));
+          const label = `${hue}/${s}/${l}`;
+          expect(redOverBlue(w!), label).toBeGreaterThan(redOverBlue(p!));
+          expect(redOverBlue(c!), label).toBeLessThan(redOverBlue(p!));
+          expect(Math.hypot(w![0] - c![0], w![1] - c![1], w![2] - c![2]), label).toBeGreaterThanOrEqual(12);
+        }
+      }
+    }
   });
 });
 
@@ -279,17 +351,19 @@ describe("deriveVariation", () => {
     expect(deriveVariation(inputs)).toEqual({
       texture: "foil",
       tone: "warm",
-      palette: paletteFor("warm", null),
+      palette: paletteFor("warm", null, 13),
       tier: "animated",
       motion: "sheen",
       intro: assignIntro(0x1234abcd).id,
       seed: 0x1234abcd,
+      toneStrength: 13,
     });
     expect(deriveVariation({ ...inputs, number: null }).motion).toBe("none");
   });
-  it("nudges the photo's own palette rather than replacing it", () => {
-    expect(deriveVariation({ ...inputs, photoPalette }).palette).toEqual(paletteFor("warm", photoPalette));
-    expect(deriveVariation({ ...inputs, photoPalette }).palette.tint).not.toBe(paletteFor("photo", photoPalette).tint);
+  it("shifts the photo's own palette by the card's strength rather than replacing it", () => {
+    const v = deriveVariation({ ...inputs, photoPalette });
+    expect(v.palette).toEqual(paletteFor("warm", photoPalette, v.toneStrength));
+    expect(v.palette.wash).not.toBe(paletteFor("photo", photoPalette, v.toneStrength).wash);
   });
   it("coerces the seed to unsigned 32-bit", () => {
     expect(deriveVariation({ ...inputs, seed: -1 }).seed).toBe(0xffffffff);
@@ -318,9 +392,19 @@ describe("withOverrides", () => {
     expect(withOverrides(base, {}, photoPalette)).toEqual(base);
   });
   it("re-resolves the palette from the sample only when the tone is overridden", () => {
-    expect(withOverrides(base, { tone: "photo" }, photoPalette).palette).toEqual(paletteFor("photo", photoPalette));
-    expect(withOverrides(base, { tone: "photo" }, null).palette).toEqual(paletteFor("photo", null));
-    expect(withOverrides(base, { tone: "cool" }, photoPalette).palette).toEqual(paletteFor("cool", photoPalette));
+    expect(withOverrides(base, { tone: "photo" }, photoPalette).palette).toEqual(paletteFor("photo", photoPalette, base.toneStrength));
+    expect(withOverrides(base, { tone: "photo" }, null).palette).toEqual(paletteFor("photo", null, base.toneStrength));
+    expect(withOverrides(base, { tone: "cool" }, photoPalette).palette).toEqual(paletteFor("cool", photoPalette, base.toneStrength));
+  });
+  it("re-resolves the palette when the strength is overridden, and keeps the tone's own strength otherwise", () => {
+    const warm = withOverrides(base, { tone: "warm" }, photoPalette);
+    expect(warm.toneStrength).toBe(base.toneStrength);
+    const strong = withOverrides(base, { tone: "warm", toneStrength: 20 }, photoPalette);
+    expect(strong.toneStrength).toBe(20);
+    expect(strong.palette).toEqual(paletteFor("warm", photoPalette, 20));
+    const stored: Palette = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] };
+    const saved = { ...base, tone: "warm" as const, palette: stored };
+    expect(withOverrides(saved, { toneStrength: 18 }, photoPalette).palette).toEqual(paletteFor("warm", photoPalette, 18));
   });
   it("keeps a stored palette, wash or none, when the tone is not overridden", () => {
     const stored: Palette = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] };
