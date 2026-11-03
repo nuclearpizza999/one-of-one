@@ -48,6 +48,7 @@
   padding: var(--oo-mat) var(--oo-mat) 0;
   background: #fff;
   color: var(--oo-ink);
+  -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
 }
 /* Hairline and shadow are drawn as box-shadow so they never change the box. */

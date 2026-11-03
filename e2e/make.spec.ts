@@ -243,6 +243,11 @@ test("each motion lights the card in a layer under the photo, and None takes it 
     await expect(frame).toHaveClass(new RegExp(`\\boo-motion-${label.toLowerCase()}\\b`));
     await expect(layer).toBeVisible();
     await expect(layer.locator("span")).toHaveCount(count);
+    if (label !== "Sheen") {
+      // The light moves: every piece's animation, pseudo-elements included (Glint's and Starlight's ::before), is running.
+      const running = await layer.evaluate((el) => el.getAnimations({ subtree: true }).filter((a) => a.playState === "running").length);
+      expect(running).toBeGreaterThan(0);
+    }
   }
   await motion.getByRole("button", { name: "None", exact: true }).click();
   await expect(layer).toHaveCount(0);
@@ -298,13 +303,20 @@ test("a tap on a card with a motion blooms the light from the finger, and the bl
 
   // A tap in a caption line being typed does not bloom; the next tap on the mat does, so one bloom shows.
   await page.locator(".oo-line-place").click();
+  expect(await bloom.count()).toBe(0);
   await card.click({ position: { x: 6, y: 6 } });
   await expect(bloom).toHaveCount(1);
   await expect(bloom).toHaveCount(0, { timeout: 2500 });
 
-  // At most four at once.
-  for (let i = 0; i < 5; i += 1) await card.click({ position: { x: 6 + i, y: 6 } });
+  // At most four at once: five taps in one go, so none can fade before the count.
+  await card.evaluate((el) => {
+    const b = el.getBoundingClientRect();
+    for (let i = 0; i < 5; i += 1) {
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: b.left + 6 + i, clientY: b.top + 6 }));
+    }
+  });
   await expect(bloom).toHaveCount(4);
+  expect(await bloom.count()).toBe(4);
 });
 
 test("with reduced motion a tap adds no bloom", async ({ page }) => {
