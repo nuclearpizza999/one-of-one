@@ -384,6 +384,7 @@ test("the Print sheet offers Card, Gallery and Thin with Gallery picked, and sav
   // Cancel closes it, and every opening starts at Gallery again.
   await sheet.getByRole("button", { name: "Cancel" }).click();
   await expect(sheet).toHaveCount(0);
+  await expect(page.locator(".app")).not.toHaveAttribute("inert", "");
   await page.getByRole("button", { name: "Print", exact: true }).click();
   await expect(shape.getByRole("button", { name: "Gallery", exact: true })).toHaveAttribute("data-selected", "true");
 
@@ -394,4 +395,37 @@ test("the Print sheet offers Card, Gallery and Thin with Gallery picked, and sav
   expect(png.width).toBe(938);
   expect(png.height).toBe(1284);
   await expect(page.getByRole("status")).toContainText("Print saved.");
+});
+
+test("Escape closes the Print sheet, the screen behind is inert while it is open, and focus returns to Print", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(portrait);
+  await expect(page.locator("img.oo-photo")).toBeVisible();
+
+  const printButton = page.getByRole("button", { name: "Print", exact: true });
+  await printButton.click();
+  const sheet = page.getByRole("dialog", { name: "Print" });
+  await expect(sheet).toBeVisible();
+  await expect(page.locator(".app")).toHaveAttribute("inert", "");
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator(".app")).not.toHaveAttribute("inert", "");
+  await expect(printButton).toBeFocused();
+});
+
+test("Plain takes the border off the Print sheet's preview", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(seoul);
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const sheet = page.getByRole("dialog", { name: "Print" });
+  await expect(sheet).toBeVisible();
+  const borderImg = sheet.locator("img.oo-border-img");
+  const field = sheet.locator(".print-field", { hasText: "Border" });
+  await expect(borderImg).toHaveCount(1);
+  await field.getByRole("button", { name: "Plain", exact: true }).click();
+  await expect(borderImg).toHaveCount(0);
+  await field.getByRole("button", { name: "Border", exact: true }).click();
+  await expect(borderImg).toHaveCount(1);
 });

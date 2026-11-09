@@ -65,6 +65,23 @@ test("opens a saved card with its caption, border and intro, goes back, and prin
   await expect(page).toHaveURL(/\/board$/);
 });
 
+test("an opened card saves a Gallery print", async ({ page }) => {
+  await signIn(page, freshEmail());
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(path.resolve("apps/web/public/dev/seoul.jpg"));
+  await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
+  await page.getByRole("button", { name: "Add to board" }).click();
+  await expect(page).toHaveURL(/\/board$/);
+  await page.getByRole("link", { name: "Seoul, South Korea" }).click();
+  await expect(page).toHaveURL(/\/card\/[0-9a-f-]{36}$/);
+
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const dl = await saveFromSheet(page, { shape: "Gallery" });
+  expect(dl.name).toMatch(/-gallery\.png$/);
+  const png = PNG.sync.read(readFileSync(dl.path));
+  expect(png.width).toBe(Math.round((900 * 100) / 94)); // 957: Gallery's photo is 94% of the print's width
+});
+
 test("someone else's card is not found", async ({ page, browser }) => {
   await signIn(page, freshEmail());
   await page.goto("/make");
