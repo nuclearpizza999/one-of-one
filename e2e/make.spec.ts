@@ -389,7 +389,7 @@ test("the Print sheet offers Card, Gallery and Thin with Gallery picked, and sav
 
   const dl = await saveFromSheet(page, { shape: "Thin" });
   await expect(sheet).toHaveCount(0);
-  expect(dl.name).toBe("one-of-one-card-thin.png");
+  expect(dl.name).toBe("one-of-one-print-thin.png");
   const png = PNG.sync.read(readFileSync(dl.path));
   expect(png.width).toBe(938);
   expect(png.height).toBe(1284);

@@ -71,11 +71,11 @@ npx supabase db push                     apply new migrations to the hosted proj
 
 ## Rules that never bend
 
-- The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them; the one exception is the founders, who may restyle their own cards through the design panel (Oct 24, 2026).
+- The card's layout and type are immutable. No filters, fonts, stickers, layouts or user-chosen borders. Only the derived border variation and intro differ between cards, and users never pick them; the one exception is the founders, who may restyle their own cards through the design panel (Oct 24, 2026). On screen the card is always the Card shape; a print may take one of the registered print shapes (Card, Gallery, Thin in `SHAPES`), chosen on the Print sheet, which change only the border, the caption strip and the text size (Nov 9, 2026).
 - Card dimensions are percentages of card width (see the table in SPEC.md). One shared layout function feeds the screen painter and the print painter. Pixel-equivalent means a screenshot diff of the two passes within a small tolerance for text anti-aliasing; a one-unit layout drift fails it.
 - The photo is never cropped. The Board and Storyboard rows show it whole at a shared row height; the card shows it whole everywhere else.
 - The card number is assigned server-side in one transaction when a card goes public: one per card, next in sequence for that place, never reissued, never computed on the client.
-- Chrome is icons first; words only where an icon would be ambiguous (place and venue names, numbers, size, paper, Plain / Border, Area / City, storyboard titles). Every icon-only control has an aria-label.
+- Chrome is icons first; words only where an icon would be ambiguous (place and venue names, numbers, size, paper, Plain / Border, Card / Gallery / Thin, Area / City, storyboard titles). Every icon-only control has an aria-label.
 - The tab bar has three slots: Board, empty, Make. The middle slot is reserved for Guide in phase two. There is no map.
 
 ## Stack (web first, decided Oct 21, 2026; the rest as suggested in SPEC.md)

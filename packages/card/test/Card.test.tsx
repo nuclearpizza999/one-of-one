@@ -54,6 +54,11 @@ describe("Card with a photo", () => {
     expect(renderToStaticMarkup(<Card {...caption} variation={wave} />)).not.toContain("oo-light");
   });
 
+  it("gives a print shape no light layer, whatever its motion", () => {
+    const wave: Variation = { ...variation, motion: "wave" };
+    expect(renderToStaticMarkup(<Card photo={photo} {...caption} variation={wave} shape="gallery" />)).not.toContain("oo-light");
+  });
+
   it("renders Glint's keyframes for the card's shape, hoisted", () => {
     const glint: Variation = { ...variation, motion: "glint" };
     const html = renderToStaticMarkup(<Card photo={photo} {...caption} variation={glint} />);

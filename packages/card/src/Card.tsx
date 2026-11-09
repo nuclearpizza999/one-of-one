@@ -118,7 +118,7 @@ export function Card({
   // The light layer: every motion but None, on a card with a photo (the empty mat has no border to light).
   const height = photo ? cardHeightUnits(photo.width, photo.height, shape) : null;
   const lightShape = variation && height !== null ? { height, seed: variation.seed } : null;
-  const lightPieces = lightShape && motion?.light ? motion.light(lightShape) : null;
+  const lightPieces = shape === "card" && lightShape && motion?.light ? motion.light(lightShape) : null;
   const keyframes = lightShape && lightPieces ? (motion?.keyframes?.(lightShape) ?? null) : null;
   const [blooms, setBlooms] = useState<readonly Bloom[]>([]);
   const nextBloom = useRef(0);

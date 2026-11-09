@@ -29,6 +29,7 @@ export function Strip({ cells, size = "action" }: { cells: StripCell[]; size?: "
             className="strip-cell"
             aria-label={c.label}
             data-selected={selected}
+            aria-pressed={size === "option" && c.text ? c.selected === true : undefined}
             disabled={c.disabled}
             onClick={c.onClick}
           >

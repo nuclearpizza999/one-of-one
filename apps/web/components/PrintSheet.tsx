@@ -3,6 +3,7 @@
 import "./print-sheet.css";
 import { Card, SHAPES, type CardPhoto, type Shape, type Variation } from "@one-of-one/card";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/components/Icon";
 import { Strip } from "@/components/Strip";
 
@@ -31,7 +32,15 @@ export function PrintSheet({ photo, caption, variation, wall, onSave, onClose }:
   const cancel = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // Modal: the screen behind goes inert, and focus goes back to where it was when the sheet closes.
+    const app = document.querySelector<HTMLElement>(".app");
+    const opener = document.activeElement as HTMLElement | null;
+    app?.setAttribute("inert", "");
     cancel.current?.focus();
+    return () => {
+      app?.removeAttribute("inert");
+      if (opener?.isConnected && typeof opener.focus === "function") opener.focus();
+    };
   }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -43,45 +52,72 @@ export function PrintSheet({ photo, caption, variation, wall, onSave, onClose }:
 
   const preview = border && variation ? { ...variation, motion: "none" as const } : null;
 
-  return (
+  return createPortal(
     <div className="print-sheet" role="dialog" aria-modal="true" aria-label="Print">
-      <div className="print-sheet-bar">
-        <button ref={cancel} type="button" className="icon-target" aria-label="Cancel" onClick={onClose}>
-          <Icon name="close" size={20} />
-        </button>
+      <div className="print-sheet-column">
+        <div className="print-sheet-bar">
+          <button ref={cancel} type="button" className="icon-target" aria-label="Cancel" onClick={onClose}>
+            <Icon name="close" size={20} />
+          </button>
+        </div>
+        <div className="card-area">
+          <Card
+            photo={photo}
+            place={caption.place}
+            date={caption.date}
+            coords={caption.coords}
+            number={null}
+            wall={wall}
+            variation={preview}
+            shape={shape}
+          />
+        </div>
+        <div className="print-field">
+          <span className="label">Shape</span>
+          <Strip
+            size="option"
+            cells={Object.values(SHAPES).map((s) => ({
+              label: s.label,
+              text: s.label,
+              selected: shape === s.id,
+              onClick: () => setShape(s.id),
+            }))}
+          />
+        </div>
+        <div className="print-field">
+          <span className="label">Border</span>
+          <Strip
+            size="option"
+            cells={[
+              {
+                label: "Plain",
+                text: "Plain",
+                selected: !border,
+                onClick: () => setBorder(false),
+              },
+              {
+                label: "Border",
+                text: "Border",
+                selected: border,
+                onClick: () => setBorder(true),
+              },
+            ]}
+          />
+        </div>
+        <div className="actions">
+          <Strip
+            cells={[
+              {
+                label: "Save print",
+                icon: "printer",
+                selected: true,
+                onClick: () => onSave({ shape, border }),
+              },
+            ]}
+          />
+        </div>
       </div>
-      <div className="card-area">
-        <Card
-          photo={photo}
-          place={caption.place}
-          date={caption.date}
-          coords={caption.coords}
-          number={null}
-          wall={wall}
-          variation={preview}
-          shape={shape}
-        />
-      </div>
-      <div className="print-field">
-        <span className="label">Shape</span>
-        <Strip
-          size="option"
-          cells={Object.values(SHAPES).map((s) => ({ label: s.label, text: s.label, selected: shape === s.id, onClick: () => setShape(s.id) }))}
-        />
-      </div>
-      <div className="print-field">
-        <span className="label">Border</span>
-        <Strip
-          size="option"
-          cells={[
-            { label: "Plain", text: "Plain", selected: !border, onClick: () => setBorder(false) },
-            { label: "Border", text: "Border", selected: border, onClick: () => setBorder(true) },
-          ]}
-        />
-      </div>
-      <div className="actions">
-        <Strip cells={[{ label: "Save print", icon: "printer", selected: true, onClick: () => onSave({ shape, border }) }]} />
-      </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

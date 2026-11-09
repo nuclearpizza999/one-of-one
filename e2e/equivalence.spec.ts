@@ -108,25 +108,26 @@ test("a one-unit border drift on the foil texture is caught", async ({ page }) =
 // Every print shape beyond the card, so adding one adds its cases. Each shape has its own tolerance,
 // set by the rule above MAX_DIFF_RATIO: about twice the largest matching ratio observed on macOS
 // Chromium, with a one-unit caption drift exceeding three times it. The noise follows the
-// text, while a one-unit drift stays large; the tolerance and the drift are both measured on the landscape card. Observed 2026-11-09, with each shape's own measured
-// baseline (gallery 0.255, thin 0.276):
+// text, while a one-unit drift stays large; the tolerance and the drift are both measured on the
+// landscape card. Observed 2026-11-09, with each shape's own measured baseline (gallery 0.255,
+// thin 0.276):
 //   gallery: matches portrait 0.00015, square 0.00019, landscape 0.00027; landscape drift 0.00228
 //   thin:    matches portrait 0.00009, square 0.00012, landscape 0.00017; landscape drift 0.00186
 // The largest match is always the landscape fixture's, the shortest card, so the drift case runs on
 // the landscape fixture too: it and the tolerance are measured on the same card.
-const SHAPE_DIFF_RATIO: Record<string, number> = { gallery: 0.0006, thin: 0.0004 };
+const SHAPE_DIFF_RATIO: Record<Exclude<Shape, "card">, number> = { gallery: 0.0006, thin: 0.0004 };
 
-for (const shape of Object.keys(SHAPES).filter((s) => s !== "card")) {
+for (const shape of (Object.keys(SHAPES) as Shape[]).filter((s): s is Exclude<Shape, "card"> => s !== "card")) {
   for (const fixture of FIXTURES) {
     const name = `${fixture}-${shape}`;
     test(`${name}: the DOM card and the PNG match`, async ({ page }) => {
       const { dom, png } = await capture(page, `fixture=${fixture}&coords=1&number=1&shape=${shape}`);
-      expect(diffRatio(dom, png, name)).toBeLessThan(SHAPE_DIFF_RATIO[shape]!);
+      expect(diffRatio(dom, png, name)).toBeLessThan(SHAPE_DIFF_RATIO[shape]);
     });
   }
   test(`${shape}: a one-unit caption drift is caught`, async ({ page }) => {
     const { dom, png } = await capture(page, `fixture=landscape&coords=1&number=1&drift=1&shape=${shape}`);
-    expect(diffRatio(dom, png, `${shape}-drift`)).toBeGreaterThan(SHAPE_DIFF_RATIO[shape]! * 3);
+    expect(diffRatio(dom, png, `${shape}-drift`)).toBeGreaterThan(SHAPE_DIFF_RATIO[shape] * 3);
   });
   test(`portrait-${shape}-texture-foil: the DOM card and the PNG match`, async ({ page }) => {
     const { dom, png } = await capture(page, `fixture=portrait&coords=1&number=1&texture=foil&tier=foil&shape=${shape}`);
