@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import type { IntroId } from "./intros";
 import { CARD_FONT_FAMILY } from "./fonts";
 import { borderDataUrl } from "./border";
-import { CARD, cardHeightUnits } from "./layout";
+import { CARD, SHAPES, type Shape, cardHeightUnits, geometryOf } from "./layout";
 import type { LineKind } from "./layout";
 import { MOTIONS, type MotionDef, lightGeometry } from "./motions";
 import type { Variation } from "./variation";
@@ -39,6 +39,8 @@ export interface CardProps {
   /** Tap or Enter on the empty mat. */
   onPick?: () => void;
   id?: string;
+  /** The print shape for a print preview; the screen card is always the default, "card". */
+  shape?: Shape;
 }
 
 const HINTS: Record<LineKind, string> = {
@@ -53,21 +55,29 @@ export function startsInCaption(target: EventTarget | null): boolean {
   return typeof el?.closest === "function" && el.closest("[contenteditable]") != null;
 }
 
-/** Geometry and type for card.css, fed from CARD so the two painters share one source. Built once. */
-const FRAME_VARS = {
-  "--oo-mat": `${CARD.mat}cqw`,
-  "--oo-strip": `${CARD.stripHeight}cqw`,
-  "--oo-inset": `${CARD.inset}cqw`,
-  "--oo-gap": `${CARD.gap}cqw`,
-  "--oo-fs": `${CARD.fontSize}cqw`,
-  "--oo-lh": `${CARD.lineHeight}`,
-  "--oo-place-max": `${CARD.photoWidth * CARD.placeMaxWidthRatio}cqw`,
-  "--oo-font": CARD_FONT_FAMILY,
-  "--oo-ink": CARD.ink,
-  "--oo-ink-coords": CARD.inkCoords,
-  "--oo-weight": `${CARD.weight}`,
-  "--oo-weight-coords": `${CARD.weightCoords}`,
-} as CSSProperties;
+const round4 = (n: number) => Number(n.toFixed(4));
+
+/** Geometry and type for card.css, from the shape's geometry so the two painters share one source. Built once per shape. */
+const FRAME_VARS = Object.fromEntries(
+  (Object.keys(SHAPES) as Shape[]).map((shape) => {
+    const g = geometryOf(shape);
+    const vars = {
+      "--oo-mat": `${g.mat}cqw`,
+      "--oo-strip": `${g.stripHeight}cqw`,
+      "--oo-inset": `${g.inset}cqw`,
+      "--oo-gap": `${g.gap}cqw`,
+      "--oo-fs": `${g.fontSize}cqw`,
+      "--oo-lh": `${g.lineHeight}`,
+      "--oo-place-max": `${round4(g.photoWidth * g.placeMaxWidthRatio)}cqw`,
+      "--oo-font": CARD_FONT_FAMILY,
+      "--oo-ink": g.ink,
+      "--oo-ink-coords": g.inkCoords,
+      "--oo-weight": `${g.weight}`,
+      "--oo-weight-coords": `${g.weightCoords}`,
+    } as CSSProperties;
+    return [shape, vars];
+  }),
+) as Record<Shape, CSSProperties>;
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -99,16 +109,17 @@ export function Card({
   variation = null,
   onPick,
   id,
+  shape = "card",
 }: CardProps) {
   const empty = photo === null;
   const pickable = empty && onPick !== undefined;
   const motion: MotionDef | null = variation ? MOTIONS[variation.motion] : null;
   const frameClass = ["oo-frame", intro ? `oo-intro-${intro}` : null, motion?.className ?? null].filter(Boolean).join(" ");
   // The light layer: every motion but None, on a card with a photo (the empty mat has no border to light).
-  const height = photo ? cardHeightUnits(photo.width, photo.height) : null;
-  const shape = variation && height !== null ? { height, seed: variation.seed } : null;
-  const lightPieces = shape && motion?.light ? motion.light(shape) : null;
-  const keyframes = shape && lightPieces ? (motion?.keyframes?.(shape) ?? null) : null;
+  const height = photo ? cardHeightUnits(photo.width, photo.height, shape) : null;
+  const lightShape = variation && height !== null ? { height, seed: variation.seed } : null;
+  const lightPieces = lightShape && motion?.light ? motion.light(lightShape) : null;
+  const keyframes = lightShape && lightPieces ? (motion?.keyframes?.(lightShape) ?? null) : null;
   const [blooms, setBlooms] = useState<readonly Bloom[]>([]);
   const nextBloom = useRef(0);
   // A tap on a card with a light layer sends Sheen's light out from the finger. A click, not a press, so a
@@ -154,7 +165,7 @@ export function Card({
   };
 
   return (
-    <div className={frameClass} id={id} key={replayKey} style={FRAME_VARS}>
+    <div className={frameClass} id={id} key={replayKey} style={FRAME_VARS[shape]}>
       <figure
         className="oo-card"
         data-wall={wall}
@@ -175,7 +186,7 @@ export function Card({
           <div className="oo-border">
             <img
               className="oo-border-img"
-              src={borderDataUrl(variation, height!)}
+              src={borderDataUrl(variation, height!, shape)}
               alt=""
               draggable={false}
             />

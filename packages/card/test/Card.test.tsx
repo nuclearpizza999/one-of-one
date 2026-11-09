@@ -23,6 +23,16 @@ const variation = {
 } as const;
 
 describe("Card with a photo", () => {
+  it("takes a print shape's geometry, and is the card by default", () => {
+    const gallery = renderToStaticMarkup(<Card photo={photo} {...caption} shape="gallery" />);
+    for (const v of ["--oo-mat:3cqw", "--oo-strip:9.5cqw", "--oo-fs:1.8cqw", "--oo-inset:1.8cqw", "--oo-gap:1.44cqw", "--oo-place-max:67.68cqw"]) {
+      expect(gallery).toContain(v);
+    }
+    const card = renderToStaticMarkup(<Card photo={photo} {...caption} />);
+    for (const v of ["--oo-mat:5cqw", "--oo-strip:16cqw", "--oo-fs:3cqw", "--oo-inset:3cqw", "--oo-gap:2.4cqw", "--oo-place-max:64.8cqw"]) {
+      expect(card).toContain(v);
+    }
+  });
   it("lights every motion but None in a layer between the border and the photo", () => {
     const pieces: Record<string, number> = { sheen: 0, wave: 1, visor: 1, breathe: 1, ripple: 2, glint: 1, starlight: 10, cross: 2, sway: 1 };
     for (const [motion, count] of Object.entries(pieces)) {

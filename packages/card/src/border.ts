@@ -1,4 +1,4 @@
-import { CARD } from "./layout";
+import { type Shape, geometryOf } from "./layout";
 import { type BorderDraw, TEXTURES } from "./textures";
 import { TIERS, type Variation } from "./variation";
 
@@ -23,13 +23,14 @@ const f = (n: number): string => Number(n.toFixed(3)).toString();
  * with the palette's wash first, when it has one. Both painters render this
  * same document, so screen and print match by construction.
  */
-export function borderSvg(v: Variation, cardHeightUnits: number): string {
+export function borderSvg(v: Variation, cardHeightUnits: number, shape: Shape = "card"): string {
+  const g = geometryOf(shape);
   const H = Number(cardHeightUnits.toFixed(3));
   const photo = {
-    x: CARD.mat,
-    y: CARD.mat,
-    w: CARD.photoWidth,
-    h: Number((H - CARD.mat - CARD.stripHeight).toFixed(3)),
+    x: g.mat,
+    y: g.mat,
+    w: g.photoWidth,
+    h: Number((H - g.mat - g.stripHeight).toFixed(3)),
   };
   const d: BorderDraw = {
     seed: v.seed >>> 0,
@@ -58,6 +59,6 @@ export function svgDataUrl(svg: string): string {
 }
 
 /** The border document as an image URL. */
-export function borderDataUrl(v: Variation, cardHeightUnits: number): string {
-  return svgDataUrl(borderSvg(v, cardHeightUnits));
+export function borderDataUrl(v: Variation, cardHeightUnits: number, shape: Shape = "card"): string {
+  return svgDataUrl(borderSvg(v, cardHeightUnits, shape));
 }

@@ -26,6 +26,61 @@ export const CARD = {
   baselineFromBottom: 0.27,
 } as const;
 
+/** The fields of CARD, with numbers that a print shape may change. */
+export interface CardGeometry {
+  width: 100;
+  mat: number;
+  photoWidth: number;
+  stripHeight: number;
+  fontSize: number;
+  lineHeight: number;
+  inset: number;
+  gap: number;
+  placeMaxWidthRatio: number;
+  ink: "#111";
+  inkCoords: "#333";
+  weight: 600;
+  weightCoords: 400;
+  baselineFromBottom: number;
+}
+
+export interface ShapeDef {
+  id: string;
+  label: string;
+  /** Border on the top and sides, caption strip and text size, in units of the print's width. */
+  mat: number;
+  stripHeight: number;
+  fontSize: number;
+}
+
+/**
+ * Print shapes (decided Nov 9, 2026). The screen is always the card; a print may take
+ * any shape. A shape sets the border, the strip and the text; the photo takes the
+ * rest of the width, and the indent and the gap follow the text as on the card.
+ */
+export const SHAPES = {
+  card: { id: "card", label: "Card", mat: CARD.mat, stripHeight: CARD.stripHeight, fontSize: CARD.fontSize },
+  gallery: { id: "gallery", label: "Gallery", mat: 3, stripHeight: 9.5, fontSize: 1.8 },
+  thin: { id: "thin", label: "Thin", mat: 2, stripHeight: 7, fontSize: 1.3 },
+} as const satisfies Record<string, ShapeDef>;
+export type Shape = keyof typeof SHAPES;
+
+const round4 = (n: number) => Number(n.toFixed(4));
+
+/** A shape's full geometry. The card's is CARD itself: indent = text size, gap = 0.8 × text size. */
+export function geometryOf(shape: Shape): CardGeometry {
+  const s: ShapeDef = SHAPES[shape];
+  return {
+    ...CARD,
+    mat: s.mat,
+    photoWidth: round4(CARD.width - 2 * s.mat),
+    stripHeight: s.stripHeight,
+    fontSize: s.fontSize,
+    inset: s.fontSize,
+    gap: round4(0.8 * s.fontSize),
+  };
+}
+
 export interface CardSpec {
   photoW: number;
   photoH: number;
@@ -61,21 +116,22 @@ export interface CardLayout {
   number: { text: string; baselineY: number } | null;
 }
 
-export function layoutCard(spec: CardSpec): CardLayout {
-  const photoH = (CARD.photoWidth * spec.photoH) / spec.photoW;
-  const photo = { x: CARD.mat, y: CARD.mat, w: CARD.photoWidth, h: photoH };
-  const strip = { y: CARD.mat + photoH, h: CARD.stripHeight };
+export function layoutCard(spec: CardSpec, shape: Shape = "card"): CardLayout {
+  const g = geometryOf(shape);
+  const photoH = (g.photoWidth * spec.photoH) / spec.photoW;
+  const photo = { x: g.mat, y: g.mat, w: g.photoWidth, h: photoH };
+  const strip = { y: g.mat + photoH, h: g.stripHeight };
   const height = strip.y + strip.h;
 
-  const fontSize = CARD.fontSize;
-  const lineHeight = fontSize * CARD.lineHeight;
+  const fontSize = g.fontSize;
+  const lineHeight = fontSize * g.lineHeight;
   // Hung from the photo: line i's box spans [strip.y + gap + i*lineHeight, +lineHeight]; its baseline sits baselineFromBottom*fontSize above the box's bottom.
-  const baselineOf = (i: number) => strip.y + CARD.gap + (i + 1) * lineHeight - fontSize * CARD.baselineFromBottom;
+  const baselineOf = (i: number) => strip.y + g.gap + (i + 1) * lineHeight - fontSize * g.baselineFromBottom;
 
   const candidates: Array<Omit<CaptionLine, "baselineY">> = [
-    { kind: "place", text: spec.place.trim(), weight: CARD.weight, color: CARD.ink },
-    { kind: "date", text: spec.date.trim(), weight: CARD.weight, color: CARD.ink },
-    { kind: "coords", text: spec.coords.trim(), weight: CARD.weightCoords, color: CARD.inkCoords },
+    { kind: "place", text: spec.place.trim(), weight: g.weight, color: g.ink },
+    { kind: "date", text: spec.date.trim(), weight: g.weight, color: g.ink },
+    { kind: "coords", text: spec.coords.trim(), weight: g.weightCoords, color: g.inkCoords },
   ];
   const present = candidates.filter((l) => l.text.length > 0);
   const lines: CaptionLine[] = present.map((l, i) => ({
@@ -94,18 +150,19 @@ export function layoutCard(spec: CardSpec): CardLayout {
     photo,
     strip,
     text: {
-      left: CARD.mat + CARD.inset,
-      right: CARD.mat + CARD.photoWidth - CARD.inset,
+      left: g.mat + g.inset,
+      right: g.mat + g.photoWidth - g.inset,
       fontSize,
       lineHeight,
-      placeMaxWidth: CARD.photoWidth * CARD.placeMaxWidthRatio,
+      placeMaxWidth: g.photoWidth * g.placeMaxWidthRatio,
     },
     lines,
     number,
   };
 }
 
-/** Card height in units for a photo of this aspect ratio: mat + photo + caption strip. */
-export function cardHeightUnits(photoW: number, photoH: number): number {
-  return CARD.mat + (CARD.photoWidth * photoH) / photoW + CARD.stripHeight;
+/** Card height in units for a photo of this aspect ratio: border + photo + caption strip, in the given shape. */
+export function cardHeightUnits(photoW: number, photoH: number, shape: Shape = "card"): number {
+  const g = geometryOf(shape);
+  return g.mat + (g.photoWidth * photoH) / photoW + g.stripHeight;
 }

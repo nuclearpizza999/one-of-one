@@ -1,6 +1,6 @@
 export { fmtCoords, fmtDate, ordinal } from "./format";
-export { CARD, cardHeightUnits, layoutCard } from "./layout";
-export type { CaptionLine, CardLayout, CardSpec, LineKind } from "./layout";
+export { CARD, SHAPES, cardHeightUnits, geometryOf, layoutCard } from "./layout";
+export type { CaptionLine, CardGeometry, CardLayout, CardSpec, LineKind, Shape, ShapeDef } from "./layout";
 export { CARD_FONT_FAMILY, cardFont, loadCardFonts } from "./fonts";
 export { INTROS, assignIntro } from "./intros";
 export type { Intro, IntroId } from "./intros";

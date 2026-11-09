@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARD } from "../src/layout";
 import {
+  PRINT_CAP,
   type CanvasTarget,
   type Ctx2D,
   drawCard,
@@ -37,12 +38,12 @@ const image = {} as CanvasImageSource;
 describe("printDimensions", () => {
   it("uses the native width below the cap", () => {
     expect(printDimensions(900, 1200)).toEqual({
-      photoW: 900, photoH: 1200, scale: 1, W: 1000, u: 10, H: 1410,
+      photoW: 900, photoH: 1200, scale: 1, W: 1000, u: 10, H: 1410, shape: "card",
     });
   });
   it("caps the photo at 4800 px wide and scales the height", () => {
     expect(printDimensions(6000, 4000)).toEqual({
-      photoW: 4800, photoH: 3200, scale: 0.8, W: 5333, u: 53.33, H: 4320,
+      photoW: 4800, photoH: 3200, scale: 0.8, W: 5333, u: 53.33, H: 4320, shape: "card",
     });
   });
   it("accepts a smaller cap", () => {
@@ -222,5 +223,14 @@ describe("renderPng", () => {
     await expect(
       renderPng({ ...spec, image, naturalWidth: 6000, naturalHeight: 4000, createCanvas, toBlob }),
     ).rejects.toThrow("canvas too large");
+  });
+});
+
+describe("printDimensions per shape", () => {
+  it("keeps the photo native and sizes the print from the shape", () => {
+    expect(printDimensions(900, 1200)).toMatchObject({ photoW: 900, photoH: 1200, W: 1000, H: 1410, shape: "card" });
+    expect(printDimensions(900, 1200, PRINT_CAP, "gallery")).toMatchObject({ photoW: 900, photoH: 1200, W: 957, H: 1320, shape: "gallery" });
+    expect(printDimensions(900, 1200, PRINT_CAP, "thin")).toMatchObject({ photoW: 900, photoH: 1200, W: 938, H: 1284, shape: "thin" });
+    expect(printDimensions(6864, 5152, PRINT_CAP, "gallery")).toMatchObject({ photoW: 4800, W: 5106 });
   });
 });

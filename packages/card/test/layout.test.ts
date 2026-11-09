@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CARD, cardHeightUnits, layoutCard } from "../src/layout";
+import { CARD, SHAPES, cardHeightUnits, geometryOf, layoutCard } from "../src/layout";
 
 const full = {
   place: "Seoul, South Korea",
@@ -89,5 +89,40 @@ describe("layoutCard caption lines", () => {
     expect(twoLines.number!.baselineY).toBeCloseTo(twoLines.lines[1]!.baselineY, 6);
     const without = layoutCard({ photoW: 900, photoH: 1200, ...full, number: null });
     expect(without.number).toBeNull();
+  });
+});
+
+describe("print shapes", () => {
+  const full = { place: "Seoul, South Korea", date: "July 1st, 2026", coords: "37.5563° N, 126.9236° E", number: 3 };
+
+  it("has Card, Gallery and Thin, and the Card shape is exactly the card", () => {
+    expect(Object.values(SHAPES).map((s) => s.label)).toEqual(["Card", "Gallery", "Thin"]);
+    expect(geometryOf("card")).toEqual(CARD);
+    expect(layoutCard({ photoW: 900, photoH: 1200, ...full }, "card")).toEqual(layoutCard({ photoW: 900, photoH: 1200, ...full }));
+  });
+  it("derives the photo width, the indent and the gap from the border and the text", () => {
+    expect(geometryOf("gallery")).toMatchObject({ mat: 3, photoWidth: 94, stripHeight: 9.5, fontSize: 1.8, inset: 1.8, gap: 1.44 });
+    expect(geometryOf("thin")).toMatchObject({ mat: 2, photoWidth: 96, stripHeight: 7, fontSize: 1.3, inset: 1.3, gap: 1.04 });
+  });
+  it("lays out a shape around the photo, never cropping it", () => {
+    const l = layoutCard({ photoW: 900, photoH: 1200, ...full }, "gallery");
+    expect(l.photo).toEqual({ x: 3, y: 3, w: 94, h: (94 * 1200) / 900 });
+    expect(l.height).toBeCloseTo(3 + (94 * 1200) / 900 + 9.5, 9);
+    expect(l.text.left).toBeCloseTo(4.8, 9);
+    expect(l.text.right).toBeCloseTo(95.2, 9);
+    expect(l.text.fontSize).toBe(1.8);
+  });
+  it("leaves at least 0.8 of the text size of air under three caption lines, in every shape", () => {
+    for (const shape of Object.keys(SHAPES) as Array<keyof typeof SHAPES>) {
+      const g = geometryOf(shape);
+      const l = layoutCard({ photoW: 900, photoH: 1200, ...full }, shape);
+      const thirdLineBoxBottom = l.strip.y + g.gap + 3 * g.fontSize * g.lineHeight;
+      expect(l.height - thirdLineBoxBottom, shape).toBeGreaterThanOrEqual(0.8 * g.fontSize - 1e-9);
+    }
+  });
+  it("gives each shape its own height", () => {
+    expect(cardHeightUnits(900, 1200, "card")).toBeCloseTo(141, 9);
+    expect(cardHeightUnits(900, 1200, "gallery")).toBeCloseTo(3 + 94 * (4 / 3) + 9.5, 9);
+    expect(cardHeightUnits(900, 600, "thin")).toBeCloseTo(2 + 64 + 7, 9);
   });
 });

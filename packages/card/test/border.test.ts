@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { borderDataUrl, borderSvg, mulberry32, svgDataUrl } from "../src/border";
+import { cardHeightUnits } from "../src/layout";
 import { TEXTURES } from "../src/textures";
 import { paletteFor, TIERS, TONES, type Tier, type Tone, type Variation } from "../src/variation";
 
@@ -115,5 +116,15 @@ describe("borderDataUrl", () => {
 describe("svgDataUrl", () => {
   it("encodes any SVG string as a data URL", () => {
     expect(svgDataUrl("<svg a=\"#1\"/>")).toBe("data:image/svg+xml;charset=utf-8,%3Csvg%20a%3D%22%231%22%2F%3E");
+  });
+});
+
+describe("borderSvg per shape", () => {
+  it("cuts the photo box out at the shape's border and photo width", () => {
+    const svg = borderSvg(base, cardHeightUnits(900, 1200, "thin"), "thin");
+    expect(svg).toContain(`M2 2h96v128h-96Z`);
+  });
+  it("draws the Card shape exactly as before", () => {
+    expect(borderSvg(base, H, "card")).toBe(borderSvg(base, H));
   });
 });

@@ -1,6 +1,6 @@
 import { cardFont, loadCardFonts } from "./fonts";
 import { svgDataUrl } from "./border";
-import { CARD, layoutCard } from "./layout";
+import { CARD, type Shape, geometryOf, layoutCard } from "./layout";
 
 /** Photo width cap for the print PNG, in pixels. 300 dpi at 12 inches needs 3600. */
 export const PRINT_CAP = 4800;
@@ -12,17 +12,19 @@ export interface PrintDims {
   W: number;
   H: number;
   u: number;
+  shape: Shape;
 }
 
-/** Pixel dimensions of the print: the photo at native width up to the cap, the card around it. */
-export function printDimensions(naturalW: number, naturalH: number, cap = PRINT_CAP): PrintDims {
+/** Pixel dimensions of the print: the photo at native width up to the cap, the shape around it. */
+export function printDimensions(naturalW: number, naturalH: number, cap = PRINT_CAP, shape: Shape = "card"): PrintDims {
+  const g = geometryOf(shape);
   const photoW = Math.min(naturalW, cap);
   const scale = photoW / naturalW;
   const photoH = Math.round(naturalH * scale);
-  const W = Math.round(photoW / (CARD.photoWidth / CARD.width));
+  const W = Math.round((photoW * CARD.width) / g.photoWidth);
   const u = W / 100;
-  const H = Math.round(CARD.mat * u + photoH + CARD.stripHeight * u);
-  return { photoW, photoH, scale, W, H, u };
+  const H = Math.round(g.mat * u + photoH + g.stripHeight * u);
+  return { photoW, photoH, scale, W, H, u, shape };
 }
 
 /** The part of CanvasRenderingContext2D the painter uses, so a Node canvas or a test fake can stand in. */
@@ -70,7 +72,7 @@ export function drawCard(
   border: CanvasImageSource | null = null,
 ): void {
   const { photoW, photoH, W, H, u } = dims;
-  const layout = layoutCard({ photoW, photoH, ...spec });
+  const layout = layoutCard({ photoW, photoH, ...spec }, dims.shape);
   const fs = layout.text.fontSize * u;
   // Positions are measured down from the top, like the DOM's, so the caption keeps its distance from the photo whatever rounding H gets.
   const y = (baselineY: number) => baselineY * u;
@@ -103,6 +105,8 @@ export interface RenderPngInput extends DrawSpec {
   naturalWidth: number;
   naturalHeight: number;
   cap?: number;
+  /** The print shape; the card by default. */
+  shape?: Shape;
   /** Defaults to document.createElement("canvas"). Pass a Node canvas factory on a server. */
   createCanvas?: (width: number, height: number) => CanvasTarget;
   /** Defaults to HTMLCanvasElement.toBlob as image/png. */
@@ -162,7 +166,7 @@ export async function renderPng(input: RenderPngInput): Promise<RenderPngResult>
 
   let lastError: unknown;
   for (const attemptCap of [cap, Math.floor(cap / 2)]) {
-    const dims = printDimensions(input.naturalWidth, input.naturalHeight, attemptCap);
+    const dims = printDimensions(input.naturalWidth, input.naturalHeight, attemptCap, input.shape ?? "card");
     try {
       const canvas = createCanvas(dims.W, dims.H);
       const ctx = canvas.getContext("2d");

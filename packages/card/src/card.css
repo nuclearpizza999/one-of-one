@@ -155,7 +155,7 @@
 }
 .oo-num {
   white-space: nowrap;
-  padding-left: 3cqw;
+  padding-left: var(--oo-inset);
   font-variant-numeric: tabular-nums;
 }
 
