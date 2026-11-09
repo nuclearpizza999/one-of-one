@@ -12,6 +12,7 @@ import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
 import { DesignPanel } from "@/components/DesignPanel";
 import { Icon } from "@/components/Icon";
+import { PrintSheet, type PrintChoice } from "@/components/PrintSheet";
 import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
@@ -36,7 +37,7 @@ export function MakeScreen() {
   const [date, setDate] = useState("");
   const [coords, setCoords] = useState("");
   const [overrides, setOverrides] = useState<VariationOverrides>({});
-  const [borderOnPrint, setBorderOnPrint] = useState(true);
+  const [printing, setPrinting] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -105,11 +106,17 @@ export function MakeScreen() {
     if (next.intro !== overrides.intro) setReplayKey((k) => k + 1);
   }
 
-  async function onPrint() {
-    if (!photo || !variation || busy) return;
+  function openPrint() {
+    if (!photo || busy) return;
     // Commit a line that is still being edited; its blur handler updates captionRef synchronously.
     const active = document.activeElement;
     if (active instanceof HTMLElement && active.classList.contains("oo-line")) active.blur();
+    setPrinting(true);
+  }
+
+  async function onPrint(choice: PrintChoice) {
+    setPrinting(false);
+    if (!photo || !variation || busy) return;
     const { place: placeText, date: dateText, coords: coordsText } = captionRef.current;
     setBusy(true);
     setStatus("Rendering the print…");
@@ -123,7 +130,8 @@ export function MakeScreen() {
           date: dateText,
           coords: coordsText,
           variation,
-          borderOnPrint,
+          border: choice.border,
+          shape: choice.shape,
         }),
       );
     } catch {
@@ -187,7 +195,7 @@ export function MakeScreen() {
           cells={[
             { label: "Replay intro", icon: "replay", disabled: !photo, onClick: () => setReplayKey((k) => k + 1) },
             { label: "Add to board", icon: "grid-plus", selected: true, disabled: !photo || busy, onClick: onAddToBoard },
-            { label: "Print", icon: "printer", disabled: !photo || busy, onClick: onPrint },
+            { label: "Print", icon: "printer", disabled: !photo || busy, onClick: openPrint },
           ]}
         />
       </div>
@@ -196,8 +204,16 @@ export function MakeScreen() {
           derived={photo.variation}
           overrides={overrides}
           onChange={onOverrides}
-          borderOnPrint={borderOnPrint}
-          onBorderOnPrint={setBorderOnPrint}
+        />
+      ) : null}
+      {printing && photo ? (
+        <PrintSheet
+          photo={{ src: photo.src, width: photo.width, height: photo.height }}
+          caption={{ place, date, coords }}
+          variation={variation}
+          wall={wall}
+          onSave={(choice) => void onPrint(choice)}
+          onClose={() => setPrinting(false)}
         />
       ) : null}
       <input ref={fileInput} type="file" accept="image/*" hidden onChange={onFile} data-testid="photo-input" />

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppFrame } from "@/components/AppFrame";
 import { DesignPanel } from "@/components/DesignPanel";
 import { Icon } from "@/components/Icon";
+import { PrintSheet, type PrintChoice } from "@/components/PrintSheet";
 import { StatusLine } from "@/components/StatusLine";
 import { Strip } from "@/components/Strip";
 import { TopBar } from "@/components/TopBar";
@@ -35,7 +36,7 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [overrides, setOverrides] = useState<VariationOverrides>({});
-  const [borderOnPrint, setBorderOnPrint] = useState(true);
+  const [printing, setPrinting] = useState(false);
   // Picks are written one after another, so the row ends with the last pick whatever the network does.
   const saving = useRef<Promise<void>>(Promise.resolve());
   const lastPick = useRef(0);
@@ -83,7 +84,13 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
     });
   }
 
-  async function onPrint() {
+  function openPrint() {
+    if (busy) return;
+    setPrinting(true);
+  }
+
+  async function onPrint(choice: PrintChoice) {
+    setPrinting(false);
     if (busy) return;
     setBusy(true);
     setStatus("Rendering the print…");
@@ -99,7 +106,8 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
           date: caption.date,
           coords: caption.coords,
           variation,
-          borderOnPrint,
+          border: choice.border,
+          shape: choice.shape,
         }),
       );
     } catch {
@@ -141,7 +149,7 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
           cells={[
             { label: "Replay intro", icon: "replay", onClick: () => setReplayKey((k) => k + 1) },
             { label: "Add to board", icon: "grid-plus", selected: true, disabled: true },
-            { label: "Print", icon: "printer", disabled: busy, onClick: onPrint },
+            { label: "Print", icon: "printer", disabled: busy, onClick: openPrint },
           ]}
         />
       </div>
@@ -150,8 +158,16 @@ export function CardScreen({ cardId, isFounder, photo, originalUrl, caption, var
           derived={stored}
           overrides={overrides}
           onChange={onOverrides}
-          borderOnPrint={borderOnPrint}
-          onBorderOnPrint={setBorderOnPrint}
+        />
+      ) : null}
+      {printing ? (
+        <PrintSheet
+          photo={photo}
+          caption={caption}
+          variation={variation}
+          wall={wall}
+          onSave={(choice) => void onPrint(choice)}
+          onClose={() => setPrinting(false)}
         />
       ) : null}
     </AppFrame>

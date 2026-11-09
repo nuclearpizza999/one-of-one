@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { PNG } from "pngjs";
 
 const portrait = path.resolve("apps/web/public/dev/portrait.png");
@@ -15,6 +15,18 @@ test.beforeEach(async ({ page }) => {
     Object.defineProperty(Navigator.prototype, "share", { value: undefined, configurable: true });
   });
 });
+
+/** Picks a shape (and a border) on the open Print sheet and saves; resolves with the saved file's name and path. */
+async function saveFromSheet(page: Page, options: { shape?: "Card" | "Gallery" | "Thin"; border?: "Plain" | "Border" } = {}) {
+  const sheet = page.getByRole("dialog", { name: "Print" });
+  await expect(sheet).toBeVisible();
+  await sheet.locator(".print-field", { hasText: "Shape" }).getByRole("button", { name: options.shape ?? "Card", exact: true }).click();
+  if (options.border) await sheet.locator(".print-field", { hasText: "Border" }).getByRole("button", { name: options.border, exact: true }).click();
+  const download = page.waitForEvent("download");
+  await sheet.getByRole("button", { name: "Save print", exact: true }).click();
+  const dl = await download;
+  return { name: dl.suggestedFilename(), path: (await dl.path())! };
+}
 
 test("makes a card from a photo, edits the caption and saves the PNG", async ({ page }) => {
   await page.goto("/make");
@@ -39,11 +51,10 @@ test("makes a card from a photo, edits the caption and saves the PNG", async ({ 
   await expect(place).toHaveText("Seoul, South Korea");
   await expect(place).not.toBeFocused();
 
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).click();
-  const dl = await download;
-  expect(dl.suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
-  const png = PNG.sync.read(readFileSync((await dl.path())!));
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const dl = await saveFromSheet(page);
+  expect(dl.name).toBe("one-of-one-seoul-south-korea.png");
+  const png = PNG.sync.read(readFileSync(dl.path));
   expect(png.width).toBe(1000);
   expect(png.height).toBe(1410);
   await expect(page.getByRole("status")).toContainText("Print saved.");
@@ -69,9 +80,8 @@ test("prints the caption that is being typed, without pressing Enter", async ({ 
   const place = page.locator(".oo-line-place");
   await place.click();
   await page.keyboard.type("Seoul, South Korea");
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).click();
-  expect((await download).suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  expect((await saveFromSheet(page)).name).toBe("one-of-one-seoul-south-korea.png");
   await expect(place).toHaveText("Seoul, South Korea");
 });
 
@@ -82,9 +92,8 @@ test("prints the caption being typed when the click does not move focus", async 
   const place = page.locator(".oo-line-place");
   await place.click();
   await page.keyboard.type("Seoul, South Korea");
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).dispatchEvent("click");
-  expect((await download).suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
+  await page.getByRole("button", { name: "Print", exact: true }).dispatchEvent("click");
+  expect((await saveFromSheet(page)).name).toBe("one-of-one-seoul-south-korea.png");
   await expect(place).toHaveText("Seoul, South Korea");
 });
 
@@ -114,11 +123,10 @@ test("reads the place, date and coordinates from a photo with EXIF", async ({ pa
   await expect(page.locator(".oo-line-coords")).toHaveText("37.5563° N, 126.9236° E");
   await expect(page.getByRole("status")).toHaveText("Read location and date from the photo.");
 
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).click();
-  const dl = await download;
-  expect(dl.suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
-  const png = PNG.sync.read(readFileSync((await dl.path())!));
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const dl = await saveFromSheet(page);
+  expect(dl.name).toBe("one-of-one-seoul-south-korea.png");
+  const png = PNG.sync.read(readFileSync(dl.path));
   expect(png.width).toBe(1000);
   expect(png.height).toBe(1410);
 });
@@ -141,9 +149,8 @@ test("shows a sideways-stored camera photo upright in both painters", async ({ p
   await expect(img).toHaveAttribute("width", "900");
   await expect(img).toHaveAttribute("height", "1200");
   await expect(page.locator(".oo-line-place")).toHaveText("Seoul, South Korea");
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).click();
-  const png = PNG.sync.read(readFileSync((await (await download).path())!));
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const png = PNG.sync.read(readFileSync((await saveFromSheet(page)).path));
   expect(png.width).toBe(1000);
   expect(png.height).toBe(1410);
 });
@@ -206,11 +213,10 @@ test("the printed PNG carries the border, differs between textures, and can leav
   await page.goto("/make");
   await page.getByTestId("photo-input").setInputFiles(seoul);
   const texture = page.locator(".design-field", { hasText: "Texture" });
-  const borderOnPrint = page.locator(".design-field", { hasText: "Border on print" });
-  const print = async () => {
-    const dl = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Print" }).click();
-    return readFileSync((await (await dl).path())!);
+  await expect(page.locator(".design-field", { hasText: "Border on print" })).toHaveCount(0);
+  const print = async (border: "Plain" | "Border" = "Border") => {
+    await page.getByRole("button", { name: "Print", exact: true }).click();
+    return readFileSync((await saveFromSheet(page, { shape: "Card", border })).path);
   };
 
   await texture.getByRole("button", { name: "Foil" }).click();
@@ -223,8 +229,7 @@ test("the printed PNG carries the border, differs between textures, and can leav
   const paper = await print();
   expect(foil.equals(paper)).toBe(false);
 
-  await borderOnPrint.getByRole("button", { name: "Off" }).click();
-  const plain = await print();
+  const plain = await print("Plain");
   expect(plain.equals(paper)).toBe(false);
 });
 
@@ -358,4 +363,35 @@ test("the strength slider shifts a warm or cool card, and Assigned returns the c
   await field.getByRole("button", { name: "Assigned" }).click();
   await expect(card).toHaveAttribute("data-tone-strength", "13");
   await expect(border).toHaveAttribute("src", before);
+});
+
+test("the Print sheet offers Card, Gallery and Thin with Gallery picked, and saves the shape picked", async ({ page }) => {
+  await page.goto("/make");
+  await page.getByTestId("photo-input").setInputFiles(portrait);
+  await expect(page.locator("img.oo-photo")).toBeVisible();
+
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const sheet = page.getByRole("dialog", { name: "Print" });
+  await expect(sheet).toBeVisible();
+  const shape = sheet.locator(".print-field", { hasText: "Shape" });
+  await expect(shape.getByRole("button", { name: "Gallery", exact: true })).toHaveAttribute("data-selected", "true");
+  await expect(sheet.locator(".print-field", { hasText: "Border" }).getByRole("button", { name: "Border", exact: true })).toHaveAttribute("data-selected", "true");
+  const frame = sheet.locator(".oo-frame");
+  await expect(frame).toHaveAttribute("style", /--oo-mat:\s*3cqw/);
+  await shape.getByRole("button", { name: "Thin", exact: true }).click();
+  await expect(frame).toHaveAttribute("style", /--oo-mat:\s*2cqw/);
+
+  // Cancel closes it, and every opening starts at Gallery again.
+  await sheet.getByRole("button", { name: "Cancel" }).click();
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await expect(shape.getByRole("button", { name: "Gallery", exact: true })).toHaveAttribute("data-selected", "true");
+
+  const dl = await saveFromSheet(page, { shape: "Thin" });
+  await expect(sheet).toHaveCount(0);
+  expect(dl.name).toBe("one-of-one-card-thin.png");
+  const png = PNG.sync.read(readFileSync(dl.path));
+  expect(png.width).toBe(938);
+  expect(png.height).toBe(1284);
+  await expect(page.getByRole("status")).toContainText("Print saved.");
 });

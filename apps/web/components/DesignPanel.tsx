@@ -9,8 +9,6 @@ export interface DesignPanelProps {
   derived: Variation;
   overrides: VariationOverrides;
   onChange: (next: VariationOverrides) => void;
-  borderOnPrint: boolean;
-  onBorderOnPrint: (on: boolean) => void;
 }
 
 type Field = Exclude<keyof VariationOverrides, "toneStrength">;
@@ -28,7 +26,7 @@ const FIELDS: ReadonlyArray<{ key: Field; title: string; entries: ReadonlyArray<
  * Pick any variation value to see it on the live card and in the print. Rendered for founders on the
  * live site and for everyone in development builds; only a founder's picks are saved with the card.
  */
-export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBorderOnPrint }: DesignPanelProps) {
+export function DesignPanel({ derived, overrides, onChange }: DesignPanelProps) {
   const set = (key: Field, id: string | undefined) => {
     const next: Record<string, string> = { ...(overrides as Record<string, string>) };
     if (id === undefined) delete next[key];
@@ -90,16 +88,6 @@ export function DesignPanel({ derived, overrides, onChange, borderOnPrint, onBor
           ) : null}
         </Fragment>
       ))}
-      <div className="design-field">
-        <span className="label">Border on print</span>
-        <Strip
-          size="option"
-          cells={[
-            { label: "On", text: "On", selected: borderOnPrint, onClick: () => onBorderOnPrint(true) },
-            { label: "Off", text: "Off", selected: !borderOnPrint, onClick: () => onBorderOnPrint(false) },
-          ]}
-        />
-      </div>
       <p className="status" data-design-assigned>
         Assigned: {derived.texture} · {derived.tone} {derived.toneStrength} · {derived.tier} · {derived.motion} · {derived.intro} · seed 0x
         {derived.seed.toString(16)} · tint {derived.palette.tint}

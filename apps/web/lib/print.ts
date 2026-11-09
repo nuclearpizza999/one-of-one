@@ -1,4 +1,4 @@
-import { type Variation, borderSvg, cardHeightUnits, renderPng } from "@one-of-one/card";
+import { type Shape, type Variation, borderSvg, cardHeightUnits, renderPng } from "@one-of-one/card";
 
 export interface PrintInput {
   image: HTMLImageElement;
@@ -8,7 +8,10 @@ export interface PrintInput {
   date: string;
   coords: string;
   variation: Variation | null;
-  borderOnPrint: boolean;
+  /** Draw the card's border texture; false prints the plain white mat. */
+  border: boolean;
+  /** The print shape. */
+  shape: Shape;
 }
 
 export function slug(s: string): string {
@@ -20,9 +23,9 @@ export function slug(s: string): string {
  * otherwise. Returns the status line to show. Throws when the render itself fails.
  */
 export async function printCard(input: PrintInput): Promise<string> {
-  const border =
-    input.borderOnPrint && input.variation
-      ? borderSvg(input.variation, cardHeightUnits(input.naturalWidth, input.naturalHeight))
+  const borderDoc =
+    input.border && input.variation
+      ? borderSvg(input.variation, cardHeightUnits(input.naturalWidth, input.naturalHeight, input.shape), input.shape)
       : undefined;
   const r = await renderPng({
     image: input.image,
@@ -32,14 +35,15 @@ export async function printCard(input: PrintInput): Promise<string> {
     date: input.date,
     coords: input.coords,
     number: null,
-    border,
+    border: borderDoc,
+    shape: input.shape,
   });
-  const name = `one-of-one-${slug(input.place)}.png`;
+  const name = `one-of-one-${slug(input.place)}${input.shape === "card" ? "" : `-${input.shape}`}.png`;
   const file = new File([r.blob], name, { type: "image/png" });
   const notes = [
     r.fontsLoaded ? "" : "Printed with a fallback font.",
     r.reduced ? "Saved at a smaller size than full print resolution." : "",
-    border && !r.borderDrawn ? "Printed without the border." : "",
+    borderDoc && !r.borderDrawn ? "Printed without the border." : "",
   ].filter(Boolean);
 
   if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {

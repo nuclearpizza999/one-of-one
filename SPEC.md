@@ -12,7 +12,7 @@ What it is not: a photo editor, a social feed with likes or follows, or a check-
 
 ## The card
 
-All dimensions are a percentage of the card's outer width (call it W), so the card scales identically from a phone screen to a 12-inch print. The reference is the Seoul card from the original mock, measured from the image.
+All dimensions are a percentage of the card's outer width (call it W), so the card scales identically at any size. On screen it is always the Card shape; a print may also take the Gallery or Thin shape (Print service). The reference is the Seoul card from the original mock, measured from the image.
 
 | Element | Value |
 | --- | --- |
@@ -101,7 +101,7 @@ Seven screens and a sign-in screen, icon-only navigation. The tab bar has three 
 | 3 Board | Your own cards as rows of whole photos: each row packs as many as fit at a base height and is rescaled to run margin to margin, so row heights vary and nothing is cropped; 2px gutters in the wall colour, no mats or captions; storyboards reachable from here; card count in the top bar | Tap opens the full card (mat, caption, number, border) with the same action strip as Make and a Back arrow in the top bar. Newest first, left to right then down. The space left at the end of the last row shows the 1/1 mark in one of six designs (fraction, diagonal, wordmark, stacked, pattern, cropped), which flick through on open and land on a random one (decided Oct 22, 2026). |
 | 4 Storyboard | An ordered set of your own cards with a title, in the same rows of whole photos; drag to reorder; a two-cell strip: add cards, copy share link (filled) | Own cards only in v1. The link opens without an account and is not listed anywhere. ← returns to Board. |
 | 5 Shared card | What a friend sees from a link: the full card, then a one-row strip with the venue name and a navigation arrow that opens Apple Maps on iOS and Google Maps elsewhere | No account, no tab bar; the link previews as the card image. Directions use the venue's public coordinates; cards without a venue show the strip with no arrow. |
-| 6 Print | Card preview, size strip (5 × 7, 8 × 10, 11 × 14), paper strip (Matte, Luster), border strip (Plain, Border), price, filled bag button | Print file is the export PNG at native resolution; the mat is part of the print. Border prints the card's static border texture; Plain prints the white mat only. ← goes back. |
+| 6 Print | Card preview, shape strip (Card, Gallery, Thin; Gallery by default), size strip (5 × 7, 8 × 10, 11 × 14), paper strip (Matte, Luster), border strip (Plain, Border), price, filled bag button | Print file is the export PNG at native resolution; the mat is part of the print. Border prints the card's static border texture; Plain prints the white mat only. ← goes back. |
 | 7 Guide (phase two) | A city's human-curated picks: a single column of full cards, each with a strip beneath carrying the venue name and the directions arrow; city name in the top bar; the pin icon fills the middle tab slot | A curator picks from public cards in the city. Cards not picked never appear and are never marked. No likes, follows or ranking by popularity. |
 
 The sketches match this table as of Oct 21, 2026, except the Board, which became rows of whole photos on Oct 22, 2026, and the sheet, which moved to the opened card.
@@ -177,7 +177,9 @@ MVP flow:
 2. The server creates a vendor order with the PNG, the size, the paper and the shipping address, and stores the vendor order id on the prints row.
 3. Vendor webhooks update prints.status; the user sees the status on the card.
 
-Sizes follow the photo's aspect ratio; the mat is printed, not added by the vendor, so the print looks exactly like the screen. The border variation is optional on prints: the Print screen's Plain / Border strip chooses between the white mat alone and the card's static border texture; animation is screen-only. Offer three sizes at launch and add framing only once prints have demand.
+Sizes follow the photo's aspect ratio; the mat is printed, not added by the vendor, so the print looks exactly like its preview. The border variation is optional on prints: the Print screen's Plain / Border strip chooses between the white mat alone and the card's static border texture; animation is screen-only. Offer three sizes at launch and add framing only once prints have demand.
+
+Shapes (decided Nov 9, 2026). A print takes one of three shapes, chosen on the Print sheet: Card, the card exactly as on screen (border 5, caption strip 16, text 3, in units of the print's width); Gallery (3, 9.5, 1.8), the default; and Thin (2, 7, 1.3). In each, the photo takes the rest of the width and is never cropped, the caption is indented by its text size and hung 0.8 of it under the photo, and the border texture is drawn to fit. One layout function draws every shape, so the preview and the print match.
 
 ## Privacy rules
 

@@ -1,8 +1,20 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { PNG } from "pngjs";
 import { freshEmail, signIn } from "./auth";
+
+/** Picks a shape (and a border) on the open Print sheet and saves; resolves with the saved file's name and path. */
+async function saveFromSheet(page: Page, options: { shape?: "Card" | "Gallery" | "Thin"; border?: "Plain" | "Border" } = {}) {
+  const sheet = page.getByRole("dialog", { name: "Print" });
+  await expect(sheet).toBeVisible();
+  await sheet.locator(".print-field", { hasText: "Shape" }).getByRole("button", { name: options.shape ?? "Card", exact: true }).click();
+  if (options.border) await sheet.locator(".print-field", { hasText: "Border" }).getByRole("button", { name: options.border, exact: true }).click();
+  const download = page.waitForEvent("download");
+  await sheet.getByRole("button", { name: "Save print", exact: true }).click();
+  const dl = await download;
+  return { name: dl.suggestedFilename(), path: (await dl.path())! };
+}
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -42,11 +54,10 @@ test("opens a saved card with its caption, border and intro, goes back, and prin
   await expect(page.getByRole("button", { name: "Add to board" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Replay intro" })).toBeEnabled();
 
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Print" }).click();
-  const dl = await download;
-  expect(dl.suggestedFilename()).toBe("one-of-one-seoul-south-korea.png");
-  const png = PNG.sync.read(readFileSync((await dl.path())!));
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  const dl = await saveFromSheet(page);
+  expect(dl.name).toBe("one-of-one-seoul-south-korea.png");
+  const png = PNG.sync.read(readFileSync(dl.path));
   expect(png.width).toBe(1000); // seoul.jpg is 900 px wide: the print is the original's size, not the rendition's
   await expect(page.getByRole("status")).toContainText("Print saved.");
 
