@@ -34,7 +34,7 @@ npm run supabase:test                    pgTAP tests in supabase/tests against t
 npx supabase db push                     apply new migrations to the hosted project (linked; run after merging a schema change)
 ```
 
-`e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen; change it only by re-measuring. Its pixel-ratio cases run on macOS only and are skipped on CI (Linux renders text edges differently); run `npm run test:e2e` on the Mac before merging any change to the card.
+`e2e/equivalence.spec.ts` is the enforcement of the screen-equals-print rule: it diffs the DOM card against the PNG on `/dev/card` and fails on a one-unit drift. `CARD.baselineFromBottom` in `packages/card/src/layout.ts` was measured by it and is frozen, and so are the Gallery and Thin values in `SHAPES`, measured the same way; change any of them only by re-measuring. Its pixel-ratio cases run on macOS only and are skipped on CI (Linux renders text edges differently); run `npm run test:e2e` on the Mac before merging any change to the card.
 
 ## Where things are
 

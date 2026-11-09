@@ -1,4 +1,4 @@
-import { TEXTURES, TIERS, type Texture, type Tier } from "@one-of-one/card";
+import { SHAPES, TEXTURES, TIERS, type Shape, type Texture, type Tier } from "@one-of-one/card";
 import nextDynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import type { Fixture } from "./DevCard";
@@ -22,9 +22,11 @@ export default async function DevCardPage({ searchParams }: { searchParams: Prom
   const number = Number.isNaN(parsed) ? 3 : parsed === 0 ? null : parsed;
   const texture = (Object.keys(TEXTURES) as Texture[]).find((t) => t === one(q.texture)) ?? null;
   const tier = (Object.keys(TIERS) as Tier[]).find((t) => t === one(q.tier)) ?? "fine";
+  const shape = (Object.keys(SHAPES) as Shape[]).find((s) => s === one(q.shape)) ?? "card";
   return (
     <DevCard
       fixture={fixture}
+      shape={shape}
       coords={one(q.coords) !== "0"}
       number={number}
       longPlace={one(q.place) === "long"}

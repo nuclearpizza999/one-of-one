@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
-import { CARD } from "../packages/card/src/layout";
+import { CARD, SHAPES, geometryOf } from "../packages/card/src/layout";
 import { TEXTURES } from "../packages/card/src/textures";
 import { TIERS } from "../packages/card/src/variation";
 
@@ -104,6 +104,35 @@ test("a one-unit border drift on the foil texture is caught", async ({ page }) =
   const { dom, png } = await capture(page, "fixture=portrait&coords=1&number=1&texture=foil&tier=foil&driftBorder=1");
   expect(diffRatio(dom, png, "border-drift")).toBeGreaterThan(MAX_TEXTURE_DIFF_RATIO * 3);
 });
+
+// Every print shape beyond the card, so adding one adds its cases. Each shape has its own tolerance,
+// set by the rule above MAX_DIFF_RATIO: about twice the largest matching ratio observed on macOS
+// Chromium, with a one-unit caption drift exceeding three times it. Smaller text has less ink, so
+// both the noise and the drift shrink with it. Observed 2026-11-09, with each shape's own measured
+// baseline (gallery 0.26, thin 0.28):
+//   gallery: matches portrait 0.00015, square 0.00019, landscape 0.00027; landscape drift 0.00228
+//   thin:    matches portrait 0.00009, square 0.00012, landscape 0.00017; landscape drift 0.00186
+// The largest match is always the landscape fixture's, the shortest card, so the drift case runs on
+// the landscape fixture too: it and the tolerance are measured on the same card.
+const SHAPE_DIFF_RATIO: Record<string, number> = { gallery: 0.0006, thin: 0.0004 };
+
+for (const shape of Object.keys(SHAPES).filter((s) => s !== "card")) {
+  for (const fixture of FIXTURES) {
+    const name = `${fixture}-${shape}`;
+    test(`${name}: the DOM card and the PNG match`, async ({ page }) => {
+      const { dom, png } = await capture(page, `fixture=${fixture}&coords=1&number=1&shape=${shape}`);
+      expect(diffRatio(dom, png, name)).toBeLessThan(SHAPE_DIFF_RATIO[shape]!);
+    });
+  }
+  test(`${shape}: a one-unit caption drift is caught`, async ({ page }) => {
+    const { dom, png } = await capture(page, `fixture=landscape&coords=1&number=1&drift=1&shape=${shape}`);
+    expect(diffRatio(dom, png, `${shape}-drift`)).toBeGreaterThan(SHAPE_DIFF_RATIO[shape]! * 3);
+  });
+  test(`portrait-${shape}-texture-foil: the DOM card and the PNG match`, async ({ page }) => {
+    const { dom, png } = await capture(page, `fixture=portrait&coords=1&number=1&texture=foil&tier=foil&shape=${shape}`);
+    expect(diffRatio(dom, png, `portrait-${shape}-texture-foil`)).toBeLessThan(MAX_TEXTURE_DIFF_RATIO);
+  });
+}
 });
 
 test("CARD.baselineFromBottom is the DOM's measured baseline", async ({ page }) => {
@@ -114,6 +143,17 @@ test("CARD.baselineFromBottom is the DOM's measured baseline", async ({ page }) 
   // 0.006 of a 34 px font is about 0.2 px at the 34 px test size, chosen so a one-pixel baseline error fails.
   expect(Math.abs(measured - CARD.baselineFromBottom)).toBeLessThan(0.006);
 });
+
+// Each other shape's caption baseline, as the DOM puts it, against the value frozen in SHAPES.
+for (const shape of Object.keys(SHAPES).filter((s) => s !== "card")) {
+  test(`${shape}: baselineFromBottom is the DOM's measured baseline`, async ({ page }) => {
+    await page.goto(`/dev/card?fixture=portrait&coords=1&number=1&shape=${shape}`);
+    await page.waitForSelector('body[data-ready="1"]');
+    const measured = Number(await page.locator("#baseline").textContent());
+    console.log(`measured ${shape} baselineFromBottom: ${measured.toFixed(4)} (has ${geometryOf(shape as keyof typeof SHAPES).baselineFromBottom})`);
+    expect(Math.abs(measured - geometryOf(shape as keyof typeof SHAPES).baselineFromBottom)).toBeLessThan(0.006);
+  });
+}
 
 test("the print's photo region is the source photo, pixel for pixel", async ({ page }) => {
   await page.goto("/dev/card?fixture=portrait&coords=1&number=1&texture=foil&tier=foil");

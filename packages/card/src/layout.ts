@@ -51,6 +51,8 @@ export interface ShapeDef {
   mat: number;
   stripHeight: number;
   fontSize: number;
+  /** Where the DOM puts the last baseline, in text sizes above the line box's bottom, when it differs from the card's. */
+  baselineFromBottom?: number;
 }
 
 /**
@@ -60,8 +62,10 @@ export interface ShapeDef {
  */
 export const SHAPES = {
   card: { id: "card", label: "Card", mat: CARD.mat, stripHeight: CARD.stripHeight, fontSize: CARD.fontSize },
-  gallery: { id: "gallery", label: "Gallery", mat: 3, stripHeight: 9.5, fontSize: 1.8 },
-  thin: { id: "thin", label: "Thin", mat: 2, stripHeight: 7, fontSize: 1.3 },
+  // Baselines: measured by the equivalence suite's probe on 2026-11-09 (DOM 0.2552) and frozen, like CARD's.
+  gallery: { id: "gallery", label: "Gallery", mat: 3, stripHeight: 9.5, fontSize: 1.8, baselineFromBottom: 0.26 },
+  // Baseline: measured by the equivalence suite's probe on 2026-11-09 (DOM 0.2764) and frozen, like CARD's.
+  thin: { id: "thin", label: "Thin", mat: 2, stripHeight: 7, fontSize: 1.3, baselineFromBottom: 0.28 },
 } as const satisfies Record<string, ShapeDef>;
 export type Shape = keyof typeof SHAPES;
 
@@ -78,6 +82,7 @@ export function geometryOf(shape: Shape): CardGeometry {
     fontSize: s.fontSize,
     inset: s.fontSize,
     gap: round4(0.8 * s.fontSize),
+    baselineFromBottom: s.baselineFromBottom ?? CARD.baselineFromBottom,
   };
 }
 

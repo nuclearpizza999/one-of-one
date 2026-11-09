@@ -1,6 +1,6 @@
 "use client";
 
-import { CARD, Card, type Palette, type Texture, type Tier, type Variation, borderSvg, cardHeightUnits, paletteFor, renderPng } from "@one-of-one/card";
+import { Card, type Palette, type Shape, type Texture, type Tier, type Variation, borderSvg, cardHeightUnits, geometryOf, paletteFor, renderPng } from "@one-of-one/card";
 import { useEffect, useMemo, useState } from "react";
 
 export type Fixture = "portrait" | "landscape" | "square";
@@ -15,6 +15,7 @@ export interface DevCardProps {
   texture: Texture | null;
   tier: Tier;
   driftBorder: boolean;
+  shape: Shape;
 }
 
 const LONG_PLACE = "Somewhere With A Very Long Place Name That Cannot Fit, Country";
@@ -35,7 +36,7 @@ interface Loaded {
 // A fixed sample (a test fixture, not a design colour) so only the texture varies between equivalence cases.
 const DEV_PALETTE: Palette = { tint: "#b08860", foil: ["#f3d9a4", "#b8864a"] };
 
-export function DevCard({ fixture, coords, number, longPlace, drift, texture, tier, driftBorder }: DevCardProps) {
+export function DevCard({ fixture, coords, number, longPlace, drift, texture, tier, driftBorder, shape }: DevCardProps) {
   const src = `/dev/${fixture}.png`;
   // A fixed variation for the diff: one sampled palette with its wash, no motion, one seed, so only the texture varies between cases.
   const variation = useMemo<Variation | null>(
@@ -58,13 +59,29 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
     let cancelled = false;
     const img = new Image();
     img.onload = () => {
-      if (!cancelled) setPhoto({ src, width: img.naturalWidth, height: img.naturalHeight, element: img });
+      if (cancelled) return;
+      // In any shape the print is 1000 px wide like the DOM card (u = 10 px): the photo is the shape's photo width × 10.
+      const width = Math.round(geometryOf(shape).photoWidth * 10);
+      if (width === img.naturalWidth) {
+        setPhoto({ src, width: img.naturalWidth, height: img.naturalHeight, element: img });
+        return;
+      }
+      const height = Math.round((img.naturalHeight * width) / img.naturalWidth);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      const sized = new Image();
+      sized.onload = () => {
+        if (!cancelled) setPhoto({ src: sized.src, width, height, element: sized });
+      };
+      sized.src = canvas.toDataURL("image/png");
     };
     img.src = src;
     return () => {
       cancelled = true;
     };
-  }, [src]);
+  }, [src, shape]);
 
   useEffect(() => {
     if (!photo) return;
@@ -80,7 +97,8 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
         date: CAPTION.date,
         coords: coordsText,
         number: numberValue,
-        border: variation ? borderSvg(variation, cardHeightUnits(photo.width, photo.height)) : undefined,
+        shape,
+        border: variation ? borderSvg(variation, cardHeightUnits(photo.width, photo.height, shape), shape) : undefined,
       });
       if (cancelled) return;
       url = URL.createObjectURL(r.blob);
@@ -98,14 +116,14 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
         const linesRect = card.querySelector<HTMLElement>(".oo-lines")!.getBoundingClientRect();
         probe.remove();
         const u = cardRect.width / 100;
-        setBaseline((linesRect.bottom - probeRect.bottom) / (CARD.fontSize * u));
+        setBaseline((linesRect.bottom - probeRect.bottom) / (geometryOf(shape).fontSize * u));
       }
     })();
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [photo, coordsText, numberValue, placeText, variation]);
+  }, [photo, coordsText, numberValue, placeText, variation, shape]);
 
   useEffect(() => {
     if (pngLoaded && baseline !== null) document.body.dataset.ready = "1";
@@ -116,7 +134,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
 
   return (
     <div style={{ padding: 20, background: "#888" }}>
-      <style>{`.drift .oo-plate { padding-top: ${CARD.gap + 1}cqw; } .drift-border .oo-border-img { transform: translateX(1cqw); }`}</style>
+      <style>{`.drift .oo-plate { padding-top: ${geometryOf(shape).gap + 1}cqw; } .drift-border .oo-border-img { transform: translateX(1cqw); }`}</style>
       <div id="dom" className={[drift ? "drift" : null, driftBorder ? "drift-border" : null].filter(Boolean).join(" ") || undefined} style={{ width: 1000 }}>
         <Card
           photo={photo ? { src: photo.src, width: photo.width, height: photo.height } : null}
@@ -126,6 +144,7 @@ export function DevCard({ fixture, coords, number, longPlace, drift, texture, ti
           number={numberValue}
           wall="dark"
           variation={variation}
+          shape={shape}
         />
       </div>
       {pngSrc ? (
